@@ -155,7 +155,7 @@ async function main(){
   const { writes, skipped, unmapped } = buildUpdates(data.matches || [], existing);
   const ids = Object.keys(writes);
 
-  if (unmapped.length) say("COULD NOT MAP (tell Claude these names):", unmapped.join(" | "));
+  if (unmapped.length) say("COULD NOT MAP (check these team names):", unmapped.join(" | "));
   else say("could not map: none");
   say(`already had: ${skipped.length}`);
   say(`to add: ${ids.length}`);
