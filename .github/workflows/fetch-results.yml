@@ -28,16 +28,16 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Fetch and write results
         env:
-          FOOTBALL_DATA_TOKEN: ${{ secrets.TK }}
-          FIREBASE_DB_URL: ${{ secrets.FIREBASE_DB_URL }}
+          FOOTBALL_DATA_TOKEN: ${{ secrets.TK2 }}
+          FIREBASE_DB_URL: ${{ secrets.TK1 }}
           DRY_RUN: ${{ inputs.dry || false }}
         run: node scripts/fetch-results.mjs
