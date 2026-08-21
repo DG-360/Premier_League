@@ -3,7 +3,6 @@ name: Fetch Premier League results
 on:
   schedule:
     # Check once per hour at minute 17 UTC.
-    # Only matches marked FINISHED by football-data.org are imported.
     - cron: '17 * * * *'
 
   workflow_dispatch:
@@ -38,6 +37,6 @@ jobs:
       - name: Fetch and write results
         env:
           FOOTBALL_DATA_TOKEN: ${{ secrets.TK2 }}
-          FIREBASE_DB_URL: ${{ secrets.TK1 }}
+          FIREBASE_DB_URL: https://world-cup-2026-predictio-7c7b2-default-rtdb.firebaseio.com
           DRY_RUN: ${{ inputs.dry || false }}
         run: node scripts/fetch-results.mjs
