@@ -2,26 +2,44 @@ name: Fetch Premier League results
 
 on:
   schedule:
-    # every 3 hours, UTC. GitHub can run these a few minutes late — that's fine.
-    - cron: '0 */3 * * *'
+    # Check once per hour at minute 17 UTC.
+    # The script only imports matches that football-data.org marks FINISHED.
+    # For typical PL kickoffs, this normally puts results in the app about
+    # 2–3 hours after kickoff.
+    - cron: '17 * * * *'
+
   workflow_dispatch:
     inputs:
       dry:
         description: 'Dry run (look, do not write)'
         type: boolean
+        required: false
         default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: premier-league-result-fetch
+  cancel-in-progress: false
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - name: Fetch and write results
         env:
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
           FIREBASE_DB_URL: ${{ secrets.FIREBASE_DB_URL }}
-          DRY_RUN: ${{ inputs.dry }}
+          DRY_RUN: ${{ inputs.dry || false }}
         run: node scripts/fetch-results.mjs
