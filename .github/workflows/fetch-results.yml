@@ -3,9 +3,7 @@ name: Fetch Premier League results
 on:
   schedule:
     # Check once per hour at minute 17 UTC.
-    # The script only imports matches that football-data.org marks FINISHED.
-    # For typical PL kickoffs, this normally puts results in the app about
-    # 2–3 hours after kickoff.
+    # Only matches marked FINISHED by football-data.org are imported.
     - cron: '17 * * * *'
 
   workflow_dispatch:
@@ -39,7 +37,7 @@ jobs:
 
       - name: Fetch and write results
         env:
-          FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+          FOOTBALL_DATA_TOKEN: ${{ secrets.TK }}
           FIREBASE_DB_URL: ${{ secrets.FIREBASE_DB_URL }}
           DRY_RUN: ${{ inputs.dry || false }}
         run: node scripts/fetch-results.mjs
