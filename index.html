@@ -336,7 +336,8 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
 .bdg-run.cold{color:var(--txt3)}
 .bdg-none{font-size:11px;color:var(--txt3)}
 
-/* ══ fanzone ══ */
+/* ══ fanzone / fan battles ══ */
+.gb-note{font-size:11px;color:var(--txt3);padding-top:2px;line-height:1.45}
 .fz-match .panel-h h3{font-size:17px}
 .fz-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start;padding:14px 12px}
 .fz-side{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0}
@@ -347,24 +348,48 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
   max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fz-fan.me{box-shadow:0 0 0 1px var(--line3)}
 .fz-vs{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--txt3);align-self:center;padding-top:10px}
-.fz-bar{display:flex;flex-wrap:wrap;gap:4px;padding:9px 12px;border-top:1px solid var(--line);
-  background:rgba(0,0,0,.16)}
-.fz-bar.note{font-size:11.5px;color:var(--txt3);display:block}
-.fz-em{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);font-size:16px;
-  display:grid;place-items:center;transition:.13s;background:rgba(255,255,255,.03)}
-.fz-em:hover{border-color:var(--line3);background:rgba(255,255,255,.09);transform:translateY(-1px)}
-.fz-em:active{transform:scale(.92)}
-.fz-em.clr{font-size:13px;color:var(--txt3);margin-left:auto}
-.fz-feed{display:flex;flex-wrap:wrap;gap:5px;padding:10px 12px;border-top:1px solid var(--line)}
-.fz-feed.empty-feed{font-size:11.5px;color:var(--txt3)}
-.fz-cheer{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:7px;
-  background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 28%,transparent)}
-.fz-cheer .cn{font-size:9.5px;font-weight:700;color:var(--c)}
-.fz-cheer .em{font-size:14px;line-height:1}
+
+.fz-thread{border-top:1px solid var(--line);background:rgba(0,0,0,.10)}
+.fz-posts{display:flex;flex-direction:column;gap:8px;padding:11px 12px;max-height:430px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.fz-empty{font-size:11.5px;color:var(--txt3);padding:7px 2px}
+.fz-post{padding:9px 10px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.025)}
+.fz-post.mine{border-color:color-mix(in srgb,var(--c) 42%,var(--line))}
+.fz-post-top{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.fz-post-top .fz-name{font-size:11.5px;font-weight:700;color:var(--c);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fz-post-top .fz-team{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);white-space:nowrap}
+.fz-post-top .fz-time{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--txt3);margin-left:auto;white-space:nowrap}
+.fz-del{font-size:13px;color:var(--txt3);padding:1px 4px;border-radius:5px;line-height:1}
+.fz-del:hover{color:#ff7a95;background:rgba(255,90,120,.1)}
+.fz-text{font-size:13px;line-height:1.45;color:var(--txt);white-space:pre-wrap;overflow-wrap:anywhere}
+.fz-reacts{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.fz-react{height:26px;min-width:38px;padding:0 7px;border-radius:7px;border:1px solid var(--line);
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.025);
+  font-size:13px;transition:.13s}
+.fz-react:hover{border-color:var(--line3);background:rgba(255,255,255,.07)}
+.fz-react.on{border-color:rgba(0,255,135,.45);background:rgba(0,255,135,.10)}
+.fz-react b{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--txt2);font-weight:700}
+.fz-compose{display:flex;gap:7px;padding:10px 12px;border-top:1px solid var(--line);background:rgba(0,0,0,.16)}
+.fz-compose textarea{flex:1;min-height:42px;max-height:94px;resize:vertical;padding:10px 11px;border-radius:10px;
+  border:1px solid var(--line2);background:rgba(0,0,0,.34);outline:none;font:inherit;font-size:12.5px;color:var(--txt);
+  line-height:1.35}
+.fz-compose textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,255,135,.12)}
+.fz-compose textarea::placeholder{color:var(--txt3)}
+.fz-send{align-self:flex-end;height:42px;padding:0 13px;border-radius:10px;background:var(--green);color:#0b0010;
+  font-size:11px;font-weight:800;letter-spacing:.05em}
+.fz-note{padding:9px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--txt3);background:rgba(0,0,0,.14)}
 .fz-club{display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid rgba(255,255,255,.045);flex-wrap:wrap}
 .fz-club:last-child{border-bottom:none}
 .fz-cn{font-size:12.5px;font-weight:600;min-width:120px}
 .fz-fans{display:flex;flex-wrap:wrap;gap:4px;flex:1}
+
+/* launch-week scoring reset */
+.launch-note{padding:11px 13px;margin-bottom:12px;border:1px solid rgba(255,176,32,.28);border-radius:var(--r);
+  background:linear-gradient(100deg,rgba(255,176,32,.11),rgba(255,176,32,.025));font-size:12px;color:var(--txt2);line-height:1.5}
+.launch-note b{color:var(--amber)}
+.warmup-mid{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--amber);
+  border:1px dashed rgba(255,176,32,.35);border-radius:8px;padding:7px 8px;white-space:nowrap}
+.tag.warm{background:rgba(255,176,32,.14);color:var(--amber)}
 
 /* ══ rules ══ */
 .rule{display:flex;gap:12px;padding:13px;border-bottom:1px solid rgba(255,255,255,.05);align-items:flex-start}
@@ -449,6 +474,9 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
   .nav button{font-size:10.5px;padding:9px 1px}
   .fz-grid{gap:4px;padding:12px 7px}
   .fz-tn{font-size:11px}
+  .fz-posts{padding:9px 8px}
+  .fz-compose{padding:9px 8px}
+  .fz-send{padding:0 10px}
 }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
@@ -702,11 +730,16 @@ const ALL = MW.flat();
 const BY_ID = Object.fromEntries(ALL.map(m => [m.id, m]));
 const TOTAL_MW = MW.length;
 
+/* Matchweek 1 was the launch/warm-up round. The official predictor
+   competition begins with matchweek 2, so MW1 never contributes points,
+   streaks, or prediction counts. */
+const SCORING_START_MW = 2;
+
 /* ══ live state ══════════════════════════════════════════════════════════ */
 let players = {}, preds = {}, results = {}, koFix = {};
 let titles = {}, finalTop = {};
 let scorers = {}, crestImgs = {}, meta = {};
-let fans = {}, zone = {};
+let fans = {}, fanThreads = {};
 let me = null, isAdmin = false, clockSkew = 0;
 let view = "fx", curMW = 1, ready = false, lastWrite = 0;
 
@@ -726,9 +759,30 @@ ref("titles").on("value",  s => { titles  = s.val() || {}; if (me) paint(); });
 ref("final").on("value",   s => { finalTop = s.val() || {}; if (me) paint(); });
 ref("scorers").on("value", s => { scorers = s.val() || {}; if (me) paint(); });
 ref("crests").on("value",  s => { crestImgs = s.val() || {}; if (me) paint(); });
-ref("meta").on("value",    s => { meta      = s.val() || {}; });
 ref("fans").on("value",    s => { fans      = s.val() || {}; if (me) paint(); });
-ref("zone").on("value",    s => { zone      = s.val() || {}; if (me) paint(); });
+ref("fanzone").on("value", s => { fanThreads = s.val() || {}; if (me) paint(); });
+
+/* One-time launch migration: remove every MW1 prediction from Firebase.
+   Because MW1 is also disabled in the UI, those predictions cannot come back.
+   The migration marker makes the operation idempotent across all browsers. */
+let mw1CleanupRunning = false;
+function ensureMW1PredictionsCleared(){
+  if (mw1CleanupRunning || (meta && meta.mw1PredictionsCleared)) return;
+  mw1CleanupRunning = true;
+  const updates = {};
+  MW[0].forEach(m => { updates["preds/" + m.id] = null; });
+  updates["meta/mw1PredictionsCleared"] = Date.now();
+  db.ref(ROOT).update(updates)
+    .then(() => console.log("[migration] Matchweek 1 predictions cleared; scoring starts at MW2."))
+    .catch(err => {
+      mw1CleanupRunning = false;
+      console.warn("[migration] Could not clear MW1 predictions:", err && err.message || err);
+    });
+}
+ref("meta").on("value", s => {
+  meta = s.val() || {};
+  ensureMW1PredictionsCleared();
+});
 
 /* ══ helpers ═════════════════════════════════════════════════════════════ */
 const koOf   = m => (koFix[m.id] || m.k) * 1000;
@@ -823,6 +877,8 @@ function scoreOf(ph, pa, ah, aa){
 }
 function pointsFor(mid, pid){
   const r = results[mid]; if (!r) return null;
+  const m = BY_ID[mid];
+  if (m && m.mw < SCORING_START_MW) return 0;
   const p = predOf(mid, pid);
   if (!full(p)) return 0;
   return scoreOf(p.h, p.a, r.h, r.a);
@@ -882,7 +938,7 @@ function tallies(){
   const t = {};
   Object.keys(players).forEach(pid => t[pid] = {pts:0, x3:0, x2:0, x1:0, x0:0, played:0, mw:{}, bonus:0});
   ALL.forEach(m => {
-    if (!results[m.id]) return;
+    if (m.mw < SCORING_START_MW || !results[m.id]) return;
     Object.keys(players).forEach(pid => {
       const v = pointsFor(m.id, pid), row = t[pid];
       row.pts += v; row.played++;
@@ -918,7 +974,7 @@ const BADGE_SHORT = 5, BADGE_LONG = 10;
    can't hand someone a phantom week at the top. */
 function completedMWs(){
   const out = [];
-  for (let i = 1; i <= TOTAL_MW; i++)
+  for (let i = SCORING_START_MW; i <= TOTAL_MW; i++)
     if (MW[i-1].every(m => results[m.id])) out.push(i);
   return out;
 }
@@ -998,31 +1054,52 @@ function leagueTable(){
     teamFull(a.c).localeCompare(teamFull(b.c)));
 }
 
-/* ══ FANZONE ═════════════════════════════════════════════════════════════
-   Everyone picks a club.  When two clubs that both have supporters meet, the
-   fans are listed under their team and can lob emoji across the divide.
+/* ══ FANZONE / FAN BATTLES ═══════════════════════════════════════════════
+   Everyone can read and react. Only supporters of the two clubs in a fixture
+   can write in that match thread. Messages are short, chronological, and
+   escaped before rendering. Each user can hold one emoji reaction per post.
    ════════════════════════════════════════════════════════════════════════ */
-const CHEERS = ["⚽","🔥","💪","🏆","👏","😂","😭","🙈","🐐","🤡","🍿","🥶"];
+const REACTIONS = ["😂","🔥","👏","😡","💀","❤️"];
 
 const fansOf = code => sortedPids().filter(pid => fans[pid] === code);
 const myClub = () => (me && fans[me]) || null;
 
 /* Matches where both sides have at least one supporter, nearest first, with
-   whatever has just been played kept at the front of the queue. */
+   the last few days retained so the post-match arguments do not vanish. */
 function derbies(limit){
   const live = ALL.filter(m => fansOf(m.h).length && fansOf(m.a).length);
-  const cutoff = now() - 3 * 86400000;                 // keep the last few days
+  const cutoff = now() - 3 * 86400000;
   return live.filter(m => koOf(m) > cutoff)
     .sort((a, b) => koOf(a) - koOf(b))
     .slice(0, limit || 6);
 }
 
-function cheersFor(mid){
-  const box = zone[mid] || {};
-  return Object.keys(box).map(k => Object.assign({ id: k }, box[k]))
-    .filter(c => c && c.e && players[c.p])
-    .sort((a, b) => (b.t || 0) - (a.t || 0))
-    .slice(0, 40);
+function threadOf(mid){
+  return fanThreads[mid] || {};
+}
+function postsFor(mid){
+  const posts = threadOf(mid).posts || {};
+  return Object.keys(posts)
+    .map(id => Object.assign({ id }, posts[id]))
+    .filter(p => p && p.p && p.text && players[p.p])
+    .sort((a, b) => (a.t || 0) - (b.t || 0))
+    .slice(-40);
+}
+function reactionsFor(mid, postId){
+  return (((threadOf(mid).reactions || {})[postId]) || {});
+}
+function reactionCounts(mid, postId){
+  const counts = {};
+  REACTIONS.forEach(e => counts[e] = 0);
+  Object.values(reactionsFor(mid, postId)).forEach(e => {
+    if (REACTIONS.includes(e)) counts[e]++;
+  });
+  return counts;
+}
+function fmtFanTime(ms){
+  if (!ms) return "";
+  const d = new Date(ms);
+  return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
 }
 
 /* ══ AUTH ════════════════════════════════════════════════════════════════ */
@@ -1221,13 +1298,14 @@ function renderScoreStrip(t, rk){
 
 function captureFocus(){
   const el = document.activeElement;
-  if (!el || !el.id || el.tagName !== "INPUT") return null;
-  return { id: el.id, s: el.selectionStart, e: el.selectionEnd };
+  if (!el || !el.id || (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA")) return null;
+  return { id: el.id, s: el.selectionStart, e: el.selectionEnd, v: el.value };
 }
 function restoreFocus(k){
   if (!k) return;
   const el = document.getElementById(k.id);
   if (!el) return;
+  if (typeof k.v === "string") el.value = k.v;
   el.focus({ preventScroll: true });
   try { el.setSelectionRange(k.s, k.e); } catch(e){}
 }
@@ -1365,8 +1443,9 @@ function viewFixtures(){
       + (i+1) + " · " + new Date(t0).toLocaleDateString([], {day:"numeric", month:"short"}) + "</option>";
   }).join("");
 
-  const done = week.filter(m => full(predOf(m.id, me))).length;
-  const openN = week.filter(m => !locked(m)).length;
+  const scoringWeek = curMW >= SCORING_START_MW;
+  const done = scoringWeek ? week.filter(m => full(predOf(m.id, me))).length : 0;
+  const openN = scoringWeek ? week.filter(m => !locked(m)).length : 0;
 
   let html = titleLocked() ? "" : titlePanel();
   html +=
@@ -1376,9 +1455,13 @@ function viewFixtures(){
     + '<button class="arw" onclick="jump(1)"' + (curMW === TOTAL_MW ? " disabled" : "") + '>›</button>'
     + (curMW !== liveMW() ? '<button class="now" onclick="jumpTo(' + liveMW() + ')">NOW</button>' : "")
     + "</div>"
-    + '<div class="prog"><div class="bar"><i style="width:' + (done/week.length*100) + '%"></i></div>'
-    + "<small>" + done + " / " + week.length + " predicted"
-    + (openN ? "" : " · week closed") + "</small></div>";
+    + (scoringWeek
+      ? '<div class="prog"><div class="bar"><i style="width:' + (done/week.length*100) + '%"></i></div>'
+        + "<small>" + done + " / " + week.length + " predicted"
+        + (openN ? "" : " · week closed") + "</small></div>"
+      : '<div class="launch-note"><b>Launch week · no predictor points.</b> Matchweek 1 predictions were cleared '
+        + 'so everyone starts level when the official competition begins in Matchweek 2. Results still count '
+        + 'normally toward the Premier League table.</div>');
 
   let lastDay = "";
   week.slice().sort((a,b) => koOf(a) - koOf(b)).forEach(m => {
@@ -1401,6 +1484,7 @@ function jumpTo(n){ curMW = +n; paint(); window.scrollTo({top:0, behavior:"smoot
 function statusTag(m){
   const r = results[m.id], t = koOf(m), left = t - now();
   if (r) return '<span class="tag ft">Full time</span>';
+  if (m.mw < SCORING_START_MW) return '<span class="tag warm">Launch week · no points</span>';
   if (isLive(m)) return '<span class="tag lv">● Live</span>';
   if (left <= 0) return '<span class="tag lk">🔒 Locked</span>';
   if (left < 3600000) return '<span class="tag soon">Closes in ' + countdown(left) + "</span>";
@@ -1408,7 +1492,8 @@ function statusTag(m){
 }
 
 function matchCard(m){
-  const r = results[m.id], lk = locked(m), mine = predOf(m.id, me);
+  const scoring = m.mw >= SCORING_START_MW;
+  const r = results[m.id], lk = locked(m) || !scoring, mine = scoring ? predOf(m.id, me) : null;
   const state = r ? "done" : (lk ? "shut" : "open");
 
   const sideH = '<div class="side">' + crest(m.h)
@@ -1419,6 +1504,8 @@ function matchCard(m){
   let mid;
   if (r){
     mid = '<div class="ft-score disp"><span>' + r.h + "</span><i>–</i><span>" + r.a + "</span></div>";
+  } else if (!scoring){
+    mid = '<div class="warmup-mid">NO PICKS</div>';
   } else {
     const vh = mine && Number.isInteger(mine.h) ? mine.h : "";
     const va = mine && Number.isInteger(mine.a) ? mine.a : "";
@@ -1434,9 +1521,11 @@ function matchCard(m){
       + "</div>";
   }
 
-  /* footer: reveal everyone's picks only once the match is locked */
+  /* footer: MW1 is explicitly excluded; later weeks reveal picks at kick-off */
   let foot = "";
-  if (lk){
+  if (!scoring){
+    foot = '<div class="mc-foot"><span class="foot-note">🟠 Launch week · predictions cleared · no predictor points</span></div>';
+  } else if (lk){
     const pids = rankedPids().filter(pid => full(predOf(m.id, pid)) || (r && pid === me));
     const chips = pids.map(pid => {
       const p = predOf(m.id, pid), v = r ? pointsFor(m.id, pid) : null;
@@ -1551,7 +1640,7 @@ function crestPanel(){
 function viewBoard(){
   const t = tallies(), rk = rankedPids(), BD = badgeData();
   if (!rk.length) return '<div class="panel"><div class="empty">No players yet.</div></div>';
-  const anyResult = ALL.some(m => results[m.id]);
+  const anyResult = ALL.some(m => m.mw >= SCORING_START_MW && results[m.id]);
 
   const rows = rk.map((pid, i) => {
     const p = players[pid], c = colr(p.ci || 0), s = t[pid];
@@ -1570,7 +1659,7 @@ function viewBoard(){
 
   let mwTable = "";
   const playedMW = [];
-  for (let i = 1; i <= TOTAL_MW; i++) if (MW[i-1].some(m => results[m.id])) playedMW.push(i);
+  for (let i = SCORING_START_MW; i <= TOTAL_MW; i++) if (MW[i-1].some(m => results[m.id])) playedMW.push(i);
   if (playedMW.length){
     const anyBonus = rk.some(pid => t[pid].bonus > 0);
     const head = "<tr><th>Player</th>" + playedMW.map(n => "<th>MW" + n + "</th>").join("")
@@ -1608,7 +1697,7 @@ function viewBoard(){
    each one — so you can see the scoreboard move rather than just its total.
    ════════════════════════════════════════════════════════════════════════ */
 function latestFeed(limit){
-  const settled = ALL.filter(m => results[m.id]).sort((a, b) => koOf(b) - koOf(a)).slice(0, limit || 8);
+  const settled = ALL.filter(m => m.mw >= SCORING_START_MW && results[m.id]).sort((a, b) => koOf(b) - koOf(a)).slice(0, limit || 8);
   if (!settled.length) return "";
   const rk = rankedPids();
 
@@ -1664,6 +1753,11 @@ function playerAdminPanel(){
     + '<div class="pa-grid">' + rows + "</div>"
     + '<div class="pa-row" style="border-top:1px dashed rgba(255,176,32,.3)">'
     + '<span class="lb" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;'
+    + 'color:var(--amber);font-weight:700;flex:1">Matchweek 1 reset</span>'
+    + '<span style="font-size:11px;color:var(--txt3)">Official scoring starts MW2</span>'
+    + '<button class="abtn red" onclick="clearMW1Predictions()">Clear MW1 picks</button></div>'
+    + '<div class="pa-row" style="border-top:1px dashed rgba(255,176,32,.3)">'
+    + '<span class="lb" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;'
     + 'color:var(--amber);font-weight:700;flex:1">Change admin key</span>'
     + '<input type="text" id="newAdminKey" placeholder="New admin key" autocomplete="off">'
     + '<button class="abtn" onclick="changeAdminKey()">Set</button></div>'
@@ -1713,7 +1807,7 @@ function badgesPanel(){
        : '<div class="prose">Nobody has led for five matchweeks running yet.</div>') + "</div>";
 }
 
-/* ══ FANZONE ═════════════════════════════════════════════════════════════ */
+/* ══ FANZONE / FAN BATTLES ═══════════════════════════════════════════════ */
 function viewFanzone(){
   const mine = myClub();
   const codes = Object.keys(TEAMS).sort((a, b) => teamFull(a).localeCompare(teamFull(b)));
@@ -1729,18 +1823,17 @@ function viewFanzone(){
         + esc(teamFull(c)) + " · " + fansOf(c).length + " fan" + (fansOf(c).length === 1 ? "" : "s")
         + "</option>").join("")
     + "</select></span></div>"
-    + '<div class="gb-note">• Change it whenever you like. It has no effect on your points.</div>'
+    + '<div class="gb-note">Your club decides which match threads you can write in. Everyone can read and react.</div>'
     + "</div></div>";
 
   /* matches where both sets of fans are represented */
   const ds = derbies(6);
   let clash = "";
   if (!ds.length){
-    clash = '<div class="panel"><div class="panel-h"><h3>Head to head</h3><small>nothing brewing</small></div>'
+    clash = '<div class="panel"><div class="panel-h"><h3>Fan Battles</h3><small>nothing brewing</small></div>'
       + '<div class="empty" style="padding:26px 18px">'
-      + (mine ? "No upcoming match pits your club against another club with fans here yet.<br>"
-              + "Get more people to pick a team."
-              : "Pick your club above to join in.") + "</div></div>";
+      + (mine ? "No nearby fixture has supporters on both sides yet.<br>Get more people to pick a team."
+              : "Pick your club above. You can still read and react once a battle appears.") + "</div></div>";
   } else {
     clash = ds.map(m => fanClash(m)).join("");
   }
@@ -1763,45 +1856,76 @@ function viewFanzone(){
   return head + clash + roll;
 }
 
+function fanPostHtml(m, post){
+  const author = players[post.p];
+  if (!author) return "";
+  const club = fans[post.p];
+  const c = club && TEAMS[club] ? teamCol(club) : colr(author.ci || 0);
+  const minePost = post.p === me;
+  const canDelete = minePost || isAdmin;
+  const rx = reactionsFor(m.id, post.id);
+  const counts = reactionCounts(m.id, post.id);
+  const mineReaction = rx[me] || "";
+
+  const buttons = REACTIONS.map(e =>
+    '<button class="fz-react' + (mineReaction === e ? " on" : "") + '" '
+      + 'onclick="toggleFanReaction(\'' + m.id + '\',\'' + post.id + '\',\'' + e + '\')" '
+      + 'title="React ' + e + '">' + e
+      + (counts[e] ? '<b>' + counts[e] + "</b>" : "") + "</button>"
+  ).join("");
+
+  return '<div class="fz-post' + (minePost ? " mine" : "") + '" style="--c:' + c + '">'
+    + '<div class="fz-post-top">'
+    + '<span class="av sm" style="--c:' + c + '">' + esc(initials(author.name)) + "</span>"
+    + '<span class="fz-name">' + esc(author.name) + "</span>"
+    + '<span class="fz-team">' + (club && TEAMS[club] ? esc(teamNm(club)) : "fan") + "</span>"
+    + '<span class="fz-time">' + esc(fmtFanTime(post.t)) + "</span>"
+    + (canDelete ? '<button class="fz-del" onclick="deleteFanPost(\'' + m.id + '\',\'' + post.id
+        + '\')" title="Delete message">×</button>' : "")
+    + "</div>"
+    + '<div class="fz-text">' + esc(post.text) + "</div>"
+    + '<div class="fz-reacts">' + buttons + "</div>"
+    + "</div>";
+}
+
 function fanClash(m){
   const H = fansOf(m.h), A = fansOf(m.a);
   const lk = locked(m), r = results[m.id];
   const mine = myClub();
+  const canPost = mine === m.h || mine === m.a;
+
   const side = (code, list) => '<div class="fz-side">' + crest(code)
     + '<span class="fz-tn">' + esc(teamFull(code)) + "</span>"
     + '<span class="fz-list">' + list.map(pid =>
         '<span class="fz-fan' + (pid === me ? " me" : "") + '" style="--c:' + colr(players[pid].ci || 0) + '">'
         + esc(players[pid].name) + "</span>").join("") + "</span></div>";
 
-  const feed = cheersFor(m.id);
-  const feedHtml = feed.length
-    ? '<div class="fz-feed">' + feed.map(c => {
-        const club = fans[c.p];
-        return '<span class="fz-cheer" style="--c:' + (club ? teamCol(club) : "#888") + '">'
-          + '<span class="cn">' + esc(initials(players[c.p].name)) + "</span>"
-          + '<span class="em">' + esc(c.e) + "</span></span>";
-      }).join("") + "</div>"
-    : '<div class="fz-feed empty-feed">No shots fired yet.</div>';
+  const posts = postsFor(m.id);
+  const postsHtml = posts.length
+    ? posts.map(p => fanPostHtml(m, p)).join("")
+    : '<div class="fz-empty">No messages yet. Somebody start it.</div>';
 
-  const canCheer = mine === m.h || mine === m.a;
-  const bar = canCheer
-    ? '<div class="fz-bar">' + CHEERS.map(e =>
-        '<button class="fz-em" onclick="sendCheer(\'' + m.id + '\',\'' + e + '\')">' + e + "</button>").join("")
-      + '<button class="fz-em clr" onclick="clearMyCheers(\'' + m.id + '\')" title="Remove your reactions">⌫</button></div>'
-    : '<div class="fz-bar note">Support ' + esc(teamFull(m.h)) + " or " + esc(teamFull(m.a))
-      + " to join this one.</div>";
+  const composer = canPost
+    ? '<div class="fz-compose">'
+      + '<textarea id="fzmsg_' + m.id + '" maxlength="180" placeholder="Say it with your chest… (180 characters)" '
+      + 'onkeydown="fanComposeKey(event,\'' + m.id + '\')"></textarea>'
+      + '<button class="fz-send" onclick="sendFanPost(\'' + m.id + '\')">SEND</button></div>'
+    : '<div class="fz-note">Read &amp; react freely. Only ' + esc(teamNm(m.h)) + " and " + esc(teamNm(m.a))
+      + " supporters can write in this battle.</div>";
 
   const status = r ? r.h + " – " + r.a : (lk ? "In progress" : fmtShortDay(koOf(m)) + " " + fmtTime(koOf(m)));
 
-  return '<div class="panel fz-match"><div class="panel-h"><h3>' + H.length + " v " + A.length + " fans</h3>"
+  return '<div class="panel fz-match"><div class="panel-h"><h3>Fan Battle · ' + H.length + " v " + A.length + " fans</h3>"
     + "<small>" + esc(status) + "</small></div>"
     + '<div class="fz-grid">' + side(m.h, H) + '<span class="fz-vs">VS</span>' + side(m.a, A) + "</div>"
-    + bar + feedHtml + "</div>";
+    + '<div class="fz-thread"><div class="fz-posts">' + postsHtml + "</div>" + composer + "</div></div>";
 }
 
 /* ══ RULES ═══════════════════════════════════════════════════════════════ */
 function viewRules(){
-  return '<div class="panel"><div class="panel-h"><h3>How points work</h3><small>every match, all season</small></div>'
+  return '<div class="panel"><div class="panel-h"><h3>How points work</h3><small>official scoring from matchweek 2</small></div>'
+    + '<div class="launch-note" style="margin:12px"><b>Matchweek 1 was the launch round.</b> All MW1 predictions were cleared '
+    + 'and it contributes no predictor points or streak credit, so players joining for Matchweek 2 start level.</div>'
 
     + '<div class="rule r3"><div class="n">3</div><div class="bd"><h4>Exact scoreline</h4>'
     + "<p>You called the score on the nose.</p>"
@@ -1853,14 +1977,13 @@ function viewRules(){
     + "<li>Badges are for glory only — they don't add to your points.</li>"
     + "</ul></div></div>"
 
-    + '<div class="panel"><div class="panel-h"><h3>Fanzone</h3><small>for the noise</small></div>'
+    + '<div class="panel"><div class="panel-h"><h3>Fanzone</h3><small>Fan Battles</small></div>'
     + '<div class="prose"><ul>'
     + "<li><b>Pick the club you support</b> on the Fanzone tab. It has no effect on your points — "
     + "predict against your own team all you like.</li>"
-    + "<li><b>When two clubs with supporters here meet</b>, both sets of fans are listed either side "
-    + "of the fixture and you can fire emoji across at each other.</li>"
-    + "<li>Only supporters of the two clubs involved can join in. Neutrals just watch.</li>"
-    + "<li>Your own reactions can be cleared with the ⌫ button.</li>"
+    + "<li><b>Supporters of the two clubs in a Fan Battle can write</b> short messages in that match thread.</li>"
+    + "<li><b>Everybody can read and react</b> with emoji, even neutrals and supporters of other clubs.</li>"
+    + "<li>Messages are limited to 180 characters with a short posting cooldown. You can delete your own messages; admins can remove any message.</li>"
     + "</ul></div></div>"
 
     + '<div class="panel"><div class="panel-h"><h3>The small print</h3></div><div class="prose"><ul>'
@@ -1870,7 +1993,8 @@ function viewRules(){
     + "match is locked.</li>"
     + "<li><b>Edit as much as you like</b> before kick-off — every change saves instantly.</li>"
     + "<li><b>Blank counts as zero.</b> A half-filled prediction scores nothing, so fill in both boxes.</li>"
-    + "<li><b>All 380 matches count</b>, from Arsenal v Coventry on 21 August to the final Sunday on 30 May.</li>"
+    + "<li><b>The official predictor competition covers 370 matches</b>, from Matchweek 2 through the final Sunday. "
+    + "Matchweek 1 remains visible as the launch round but carries no predictor points.</li>"
     + "<li><b>Ties</b> are broken by most exact scores, then most 2-pointers.</li>"
     + "<li><b>The title race bonus is worth up to 30 points</b> — 20 for the champions, 10 for the "
     + "runner-up — and settles on the final table in May.</li>"
@@ -1885,6 +2009,11 @@ const writeTimers = {};
 function setPred(mid, side, el){
   const m = BY_ID[mid];
   if (!m) return;
+  if (m.mw < SCORING_START_MW){
+    el.value = "";
+    toast("Matchweek 1 was the launch round — scoring starts at Matchweek 2", "bad");
+    paint(); return;
+  }
   if (locked(m)){
     el.value = "";
     toast("That match has kicked off — it's locked", "bad");
@@ -1940,7 +2069,7 @@ function clearFinal(){
   ref("final").remove().then(() => toast("Back to reading the final table automatically"));
 }
 
-/* ══ FANZONE ═════════════════════════════════════════════════════════════ */
+/* ══ FANZONE / FAN BATTLES ═══════════════════════════════════════════════ */
 function setFanClub(code){
   if (!me) return;
   ref("fans/" + me).set(code || null)
@@ -1948,25 +2077,59 @@ function setFanClub(code){
     .catch(() => toast("Couldn't save — check your connection", "bad"));
 }
 
-let lastCheer = 0;
-function sendCheer(mid, emoji){
+let lastFanPost = 0;
+function fanComposeKey(event, mid){
+  if (event.key === "Enter" && !event.shiftKey){
+    event.preventDefault();
+    sendFanPost(mid);
+  }
+}
+function sendFanPost(mid){
   if (!me || !myClub()) return toast("Pick your club first", "bad");
   const m = BY_ID[mid];
   if (!m) return;
-  if (myClub() !== m.h && myClub() !== m.a) return toast("You don't have a dog in this fight", "bad");
-  if (Date.now() - lastCheer < 900) return toast("Easy now", "bad");
-  lastCheer = Date.now();
-  ref("zone/" + mid).push({ p: me, e: emoji, t: Date.now() })
-    .catch(() => toast("Couldn't send — check your connection", "bad"));
+  if (myClub() !== m.h && myClub() !== m.a)
+    return toast("Only the two sets of supporters can write here", "bad");
+
+  const el = document.getElementById("fzmsg_" + mid);
+  if (!el) return;
+  const message = (el.value || "").trim().replace(/\s+/g, " ");
+  if (!message) return;
+  if (message.length > 180) return toast("Keep it under 180 characters", "bad");
+  if (Date.now() - lastFanPost < 5000) return toast("Give it a few seconds", "bad");
+
+  /* Clear the composer optimistically before Firebase echoes the new post.
+     Otherwise the realtime repaint could restore the just-sent text. */
+  el.value = "";
+  lastFanPost = Date.now();
+  const postRef = ref("fanzone/" + mid + "/posts").push();
+  postRef.set({ p: me, text: message, t: Date.now() })
+    .catch(() => {
+      lastFanPost = 0;
+      const live = document.getElementById("fzmsg_" + mid);
+      if (live && !live.value) live.value = message;
+      toast("Couldn't post — check your connection", "bad");
+    });
 }
 
-function clearMyCheers(mid){
-  if (!me) return;
-  const box = zone[mid] || {};
-  const mineIds = Object.keys(box).filter(k => box[k] && box[k].p === me);
-  if (!mineIds.length) return toast("Nothing of yours to clear");
-  Promise.all(mineIds.map(k => ref("zone/" + mid + "/" + k).remove()))
-    .then(() => toast("Your reactions removed"));
+function toggleFanReaction(mid, postId, emoji){
+  if (!me || !REACTIONS.includes(emoji)) return;
+  const current = reactionsFor(mid, postId)[me] || "";
+  const target = ref("fanzone/" + mid + "/reactions/" + postId + "/" + me);
+  if (current === emoji) target.remove();
+  else target.set(emoji);
+}
+
+function deleteFanPost(mid, postId){
+  const post = (((threadOf(mid).posts || {})[postId]) || null);
+  if (!post || (!isAdmin && post.p !== me)) return;
+  if (!confirm("Delete this Fanzone message?")) return;
+  const updates = {};
+  updates["fanzone/" + mid + "/posts/" + postId] = null;
+  updates["fanzone/" + mid + "/reactions/" + postId] = null;
+  db.ref(ROOT).update(updates)
+    .then(() => toast("Message deleted"))
+    .catch(() => toast("Couldn't delete message", "bad"));
 }
 
 /* ══ PLAYER ADMIN ════════════════════════════════════════════════════════ */
@@ -1989,9 +2152,24 @@ function removePlayer(pid){
   if (!confirm("Remove " + nm + " from the league?\n\nTheir points and predictions go with them. "
              + "This can't be undone.")) return;
   ref("players/" + pid).remove()
-    .then(() => { ref("titles/" + pid).remove(); ref("boots/" + pid).remove(); })
+    .then(() => {
+      ref("titles/" + pid).remove();
+      ref("boots/" + pid).remove();
+      ref("fans/" + pid).remove();
+    })
     .then(() => toast(nm + " removed"))
     .catch(() => toast("Couldn't remove — check your connection", "bad"));
+}
+
+function clearMW1Predictions(){
+  if (!isAdmin) return;
+  if (!confirm("Delete every Matchweek 1 prediction for every player?\n\nMatchweek 1 is excluded from scoring and this cannot be undone.")) return;
+  const updates = {};
+  MW[0].forEach(m => { updates["preds/" + m.id] = null; });
+  updates["meta/mw1PredictionsCleared"] = Date.now();
+  db.ref(ROOT).update(updates)
+    .then(() => toast("Matchweek 1 predictions cleared", "good"))
+    .catch(() => toast("Couldn't clear Matchweek 1 predictions", "bad"));
 }
 
 function changeAdminKey(){
