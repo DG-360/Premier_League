@@ -82,6 +82,18 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   background:var(--c,#888);color:#0b0010;letter-spacing:.02em}
 .av.sm{width:22px;height:22px;border-radius:7px;font-size:9px}
 .av.lg{width:40px;height:40px;border-radius:11px;font-size:14px}
+.avpick{cursor:pointer;border:1px solid rgba(255,255,255,.24);transition:.16s;box-shadow:0 0 0 0 rgba(255,255,255,0)}
+.avpick:hover{transform:translateY(-1px);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+.avpick:active{transform:scale(.96)}
+.color-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:7px}
+.color-swatch{aspect-ratio:1;border-radius:11px;background:var(--c);border:2px solid transparent;position:relative;transition:.14s;min-width:0}
+.color-swatch:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 5px 14px rgba(0,0,0,.3)}
+.color-swatch.on{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.16)}
+.color-swatch.on::after{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:#100016;font-size:17px;font-weight:900;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.color-swatch:disabled{opacity:.22;cursor:not-allowed;filter:grayscale(.35)}
+.color-swatch:disabled::after{content:'×';position:absolute;inset:0;display:grid;place-items:center;color:#100016;font-size:18px;font-weight:900}
+.color-note{font-size:10.5px;color:var(--txt3);margin-top:8px;line-height:1.45}
+@media(max-width:400px){.color-grid{grid-template-columns:repeat(6,1fr);gap:7px}}
 
 /* ══ header ══ */
 .hdr{padding:26px 2px 14px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
@@ -569,6 +581,11 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
         <input id="upPw2" type="password" autocomplete="new-password" placeholder="Type it again"
                onkeydown="if(event.key==='Enter')doSignUp()">
       </div>
+      <div class="fld">
+        <label>Your player color</label>
+        <div class="color-grid" id="upColorGrid"></div>
+        <div class="color-note">Pick a unique color. It follows your name across predictions, the scoreboard and Fanzone so people can recognize you at a glance.</div>
+      </div>
       <button class="btn" onclick="doSignUp()">Create account &amp; play</button>
       <div class="err" id="errUp" hidden><span>⚠</span><span id="errUpTxt"></span></div>
       <p class="hint">Your password protects your predictions — nobody else can edit them. There is no reset, so pick something you'll remember.</p>
@@ -592,6 +609,18 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
   </div>
 </div>
 
+<!-- ═══ PLAYER COLOR ═══ -->
+<div class="ov" id="ovColor" hidden>
+  <div class="sheet" style="max-width:390px">
+    <div class="mark">Player identity</div>
+    <h2>Choose your color</h2>
+    <p class="lede">This is your visual signature beside predictions, rankings and messages. Colors already used by another player are unavailable.</p>
+    <div class="color-grid" id="profileColorGrid"></div>
+    <button class="btn" style="margin-top:18px" onclick="saveMyColor()">Save color</button>
+    <button class="btn ghost" style="margin-top:8px" onclick="closeColorPicker()">Cancel</button>
+  </div>
+</div>
+
 <!-- ═══ APP ═══ -->
 <div class="wrap" id="app" style="display:none">
 
@@ -603,12 +632,13 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
   </header>
 
   <div class="ubar">
-    <div class="av lg" id="uAv">–</div>
+    <button class="av lg avpick" id="uAv" type="button" title="Choose your player color" onclick="openColorPicker()">–</button>
     <div class="idn">
       <b id="uName">–</b>
       <small id="uSub">–</small>
     </div>
     <div class="tot"><b id="uPts">0</b><small>PTS</small></div>
+    <button class="ico" title="Choose your player color" onclick="openColorPicker()">🎨</button>
     <button class="ico" id="btnAdmin" title="Admin" onclick="openAdmin()">🛡</button>
     <button class="ico" title="Sign out" onclick="signOut()">⏻</button>
   </div>
@@ -714,9 +744,30 @@ function sha256(ascii){
 const hashPw    = pw => sha256("pl2627::" + pw);
 const hashAdmin = k  => sha256("pl2627-admin::" + k);
 
-/* ── player palette ── */
-const PAL=["#00ff87","#04f5ff","#ff8fb8","#ffb020","#b07cff","#5ce1a0","#ff7a5c","#7ab8ff","#ffe066","#ff6fd8","#66e0d0","#c4a5ff"];
-const colr = i => PAL[i % PAL.length];
+/* ── player palette ───────────────────────────────────────────────────────
+   Each player owns one palette slot. Existing accounts keep their old ci,
+   while new accounts choose a free color. The avatar in the user bar lets a
+   signed-in player change to any color that nobody else is using. */
+const PAL=[
+  "#00ff87","#04f5ff","#ff8fb8","#ffb020","#b07cff","#5ce1a0",
+  "#ff7a5c","#7ab8ff","#ffe066","#ff6fd8","#66e0d0","#c4a5ff",
+  "#ff9f43","#a8ff60","#55c7ff","#ff6685","#45f0c1","#ffbe8a",
+  "#d7ff45","#9fa8ff","#ffd166","#3de2d0","#f783ff","#ff8f70"
+];
+const colr = i => PAL[((Number(i)||0) % PAL.length + PAL.length) % PAL.length];
+const colorIndex = p => Number.isInteger(Number(p && p.ci)) ? Number(p.ci) : 0;
+function usedColors(exceptPid){
+  const out = new Set();
+  Object.keys(players).forEach(pid => {
+    if (pid !== exceptPid) out.add(colorIndex(players[pid]));
+  });
+  return out;
+}
+function firstFreeColor(exceptPid){
+  const used = usedColors(exceptPid);
+  for (let i=0;i<PAL.length;i++) if (!used.has(i)) return i;
+  return 0;
+}
 const initials = n => (n||"?").trim().split(/\s+/).map(w=>w[0]||"").join("").toUpperCase().slice(0,2)||"?";
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -794,7 +845,12 @@ db.ref(".info/connected").on("value", s => {
   if (el) el.textContent = s.val() ? "Live · synced" : "Reconnecting…";
 });
 
-ref("players").on("value", s => { players = s.val() || {}; renderWhoList(); if (me) paint(); });
+ref("players").on("value", s => {
+  players = s.val() || {};
+  renderWhoList();
+  renderSignupColors();
+  if (me) paint();
+});
 ref("preds").on("value",   s => { preds   = s.val() || {}; if (me) paint(); });
 ref("results").on("value", s => { results = s.val() || {}; if (me) paint(); });
 ref("kickoffs").on("value",s => { koFix   = s.val() || {}; if (me) paint(); });
@@ -1389,6 +1445,63 @@ function fmtFanTime(ms){
 
 /* ══ AUTH ════════════════════════════════════════════════════════════════ */
 let authMode = "in", pickedPid = null;
+let signupColor = null, profileColorDraft = null;
+
+function colorButtons(selected, exceptPid, handlerName){
+  const used = usedColors(exceptPid);
+  return PAL.map((c, i) => {
+    const taken = used.has(i);
+    return '<button type="button" class="color-swatch' + (selected === i ? ' on' : '') + '"'
+      + ' style="--c:' + c + '"'
+      + (taken ? ' disabled title="Already used"' : ' title="Choose this color" onclick="' + handlerName + '(' + i + ')"')
+      + ' aria-label="Player color ' + (i+1) + '"></button>';
+  }).join("");
+}
+
+function renderSignupColors(){
+  const box = document.getElementById("upColorGrid");
+  if (!box) return;
+  const used = usedColors(null);
+  if (signupColor === null || used.has(signupColor)) signupColor = firstFreeColor(null);
+  box.innerHTML = colorButtons(signupColor, null, "chooseSignupColor");
+}
+function chooseSignupColor(i){
+  if (usedColors(null).has(i)) return;
+  signupColor = i;
+  renderSignupColors();
+}
+
+function openColorPicker(){
+  if (!me || !players[me]) return;
+  profileColorDraft = colorIndex(players[me]);
+  renderProfileColors();
+  document.getElementById("ovColor").hidden = false;
+}
+function closeColorPicker(){
+  document.getElementById("ovColor").hidden = true;
+  profileColorDraft = null;
+}
+function renderProfileColors(){
+  const box = document.getElementById("profileColorGrid");
+  if (!box || !me) return;
+  box.innerHTML = colorButtons(profileColorDraft, me, "chooseProfileColor");
+}
+function chooseProfileColor(i){
+  if (!me || usedColors(me).has(i)) return;
+  profileColorDraft = i;
+  renderProfileColors();
+}
+function saveMyColor(){
+  if (!me || profileColorDraft === null) return;
+  if (usedColors(me).has(profileColorDraft)){
+    toast("Someone just took that color — choose another", "bad");
+    renderProfileColors();
+    return;
+  }
+  ref("players/" + me + "/ci").set(profileColorDraft)
+    .then(() => { closeColorPicker(); toast("Your player color is updated", "good"); })
+    .catch(() => toast("Couldn't save your color", "bad"));
+}
 
 function setAuthMode(m){
   authMode = m; pickedPid = null;
@@ -1399,6 +1512,7 @@ function setAuthMode(m){
   document.getElementById("errIn").hidden = true;
   document.getElementById("errUp").hidden = true;
   renderWhoList();
+  if (m === "up") renderSignupColors();
 }
 
 function renderWhoList(){
@@ -1459,14 +1573,17 @@ function doSignUp(){
   if (pw !== pw2)        return authErr("Up", "The two passwords don't match.");
   if (Object.values(players).some(p => p.name.toLowerCase() === name.toLowerCase()))
     return authErr("Up", "That name is already taken.");
+  if (signupColor === null) signupColor = firstFreeColor(null);
+  if (usedColors(null).has(signupColor)) return authErr("Up", "That color was just taken. Pick another one.");
   const pid = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  ref("players/" + pid).set({ name, pw: hashPw(pw), ci: Object.keys(players).length, joined: Date.now() })
+  ref("players/" + pid).set({ name, pw: hashPw(pw), ci: signupColor, joined: Date.now() })
     .then(() => enter(pid))
     .catch(() => authErr("Up", "Could not reach the database. Check your connection."));
 }
 
 function enter(pid){
   me = pid; ready = true;
+  signupColor = null;
   try { sessionStorage.setItem("pl2627_me", pid); } catch(e){}
   document.getElementById("ovAuth").hidden = true;
   document.getElementById("app").style.display = "block";
