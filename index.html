@@ -336,6 +336,48 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
 .bdg-run.cold{color:var(--txt3)}
 .bdg-none{font-size:11px;color:var(--txt3)}
 
+/* ══ betable ══ */
+.bt-hero{padding:14px 13px;background:linear-gradient(130deg,rgba(0,255,135,.10),rgba(4,245,255,.04));
+  border-bottom:1px solid var(--line)}
+.bt-hero h2{font-family:'Bebas Neue',sans-serif;font-size:29px;line-height:1;margin-bottom:5px}
+.bt-hero p{font-size:11.5px;color:var(--txt2);line-height:1.55}
+.bt-note{font-size:10.5px;color:var(--txt3);line-height:1.5;margin-top:7px}
+.bt-good,.bt-risk{margin:12px;border-radius:12px;padding:12px 13px;border:1px solid var(--line2)}
+.bt-good{background:rgba(0,255,135,.075);border-color:rgba(0,255,135,.28)}
+.bt-risk{background:rgba(255,176,32,.075);border-color:rgba(255,176,32,.30)}
+.bt-good b,.bt-risk b{display:block;font-size:13px;margin-bottom:3px}
+.bt-good b{color:var(--green)} .bt-risk b{color:var(--amber)}
+.bt-sub{font-size:11px;color:var(--txt2);line-height:1.5}
+.bt-combo{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.bt-leg{display:flex;align-items:center;gap:9px;padding:10px 13px;border-bottom:1px solid rgba(255,255,255,.045)}
+.bt-leg:last-child{border-bottom:none}
+.bt-leg .num{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;flex-shrink:0;
+  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;background:rgba(0,255,135,.13);color:var(--green)}
+.bt-leg .main{flex:1;min-width:0}
+.bt-leg .game{font-size:12px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-leg .pick{font-size:13px;font-weight:700;margin-top:2px}
+.bt-conf{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;color:var(--green);white-space:nowrap}
+.bt-conf.mid{color:var(--amber)}
+.bt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px 12px}
+.bt-card{border:1px solid var(--line);border-radius:11px;padding:10px;background:rgba(0,0,0,.16);min-width:0}
+.bt-card.hot{border-color:rgba(0,255,135,.28);background:rgba(0,255,135,.045)}
+.bt-card .game{font-size:10.5px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-card .pick{font-size:13px;font-weight:700;margin-top:3px}
+.bt-card .meta{display:flex;gap:7px;align-items:center;margin-top:5px;font-size:10px;color:var(--txt3);flex-wrap:wrap}
+.bt-pill{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:800;letter-spacing:.05em;padding:2px 5px;border-radius:4px;
+  background:rgba(0,255,135,.14);color:var(--green)}
+.bt-pill.watch{background:rgba(255,255,255,.06);color:var(--txt3)}
+.bt-meter{height:4px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:7px}
+.bt-meter i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:3px}
+.bt-list{display:flex;flex-direction:column}
+.bt-row{display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid rgba(255,255,255,.045)}
+.bt-row:last-child{border-bottom:none}
+.bt-row .game{flex:1;min-width:0}
+.bt-row .game b{font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-row .game small{font-size:10px;color:var(--txt3);display:block;margin-top:2px}
+.bt-empty{padding:18px 13px;color:var(--txt3);font-size:11.5px;line-height:1.6}
+@media(max-width:520px){.bt-grid{grid-template-columns:1fr}}
+
 /* ══ fanzone / fan battles ══ */
 .gb-note{font-size:11px;color:var(--txt3);padding-top:2px;line-height:1.45}
 .fz-match .panel-h h3{font-size:17px}
@@ -583,6 +625,7 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
     <button class="on" data-v="fx" onclick="go('fx')">Fixtures</button>
     <button data-v="tb" onclick="go('tb')">League</button>
     <button data-v="lb" onclick="go('lb')">Scoreboard</button>
+    <button data-v="bt" onclick="go('bt')">Betable</button>
     <button data-v="fz" onclick="go('fz')">Fanzone</button>
     <button data-v="ru" onclick="go('ru')">Rules</button>
   </nav>
@@ -1054,6 +1097,198 @@ function leagueTable(){
     teamFull(a.c).localeCompare(teamFull(b.c)));
 }
 
+/* ══ BETABLE ═════════════════════════════════════════════════════════════
+   Crowd-consensus signal built only from submitted predictions.
+
+   It is deliberately labelled "Betable confidence", not true probability:
+   these are group picks, not calibrated bookmaker odds.
+
+   Weighting:
+   - complete prediction: 1.00 base vote
+   - unique current scoreboard leader: 1.50x vote
+   - larger predicted winning margin: more conviction
+       1 goal = 1.15x, 2 goals = 1.30x, 3+ goals = 1.45x
+   - sparse participation is penalized
+
+   Combo recommendation: 3–5 upcoming matches, but only if every selected leg
+   clears 75% Betable confidence. Otherwise the tab explicitly recommends
+   treating the week as individual-game territory.
+   ════════════════════════════════════════════════════════════════════════ */
+const BET_LEADER_MULT = 1.50;
+const BET_COMBO_THRESHOLD = 0.75;
+
+function betOutcome(p){
+  if (!full(p)) return null;
+  if (p.h > p.a) return "H";
+  if (p.h < p.a) return "A";
+  return "D";
+}
+
+function betPickLabel(m, outcome){
+  if (outcome === "H") return teamNm(m.h) + " to win";
+  if (outcome === "A") return teamNm(m.a) + " to win";
+  return "Draw";
+}
+
+function betLeaderPid(){
+  const rk = rankedPids(), t = tallies();
+  if (!rk.length) return null;
+  const first = t[rk[0]];
+  if (!first || !first.played) return null;
+  if (rk.length > 1){
+    const second = t[rk[1]];
+    if (second && first.pts === second.pts && first.x3 === second.x3 && first.x2 === second.x2)
+      return null;
+  }
+  return rk[0];
+}
+
+function betVoteWeight(p, pid, leader){
+  const margin = Math.abs(p.h - p.a);
+  const rankWeight = pid === leader ? BET_LEADER_MULT : 1;
+  const marginWeight = margin ? 1 + 0.15 * Math.min(margin, 3) : 1;
+  return rankWeight * marginWeight;
+}
+
+function betAnalysis(m){
+  const pids = Object.keys(players);
+  const leader = betLeaderPid();
+  const weights = { H:0, D:0, A:0 };
+  const marginSum = { H:0, D:0, A:0 };
+  const marginN = { H:0, D:0, A:0 };
+  const rawOutcomes = [];
+  let submitted = 0, totalWeight = 0;
+
+  pids.forEach(pid => {
+    const p = predOf(m.id, pid);
+    if (!full(p)) return;
+    const outcome = betOutcome(p);
+    const w = betVoteWeight(p, pid, leader);
+    const margin = Math.abs(p.h - p.a);
+    submitted++;
+    rawOutcomes.push(outcome);
+    weights[outcome] += w;
+    totalWeight += w;
+    marginSum[outcome] += margin;
+    marginN[outcome]++;
+  });
+
+  const outcomes = ["H","D","A"];
+  const best = outcomes.sort((a,b) => weights[b] - weights[a])[0];
+  const weightedShare = totalWeight ? weights[best] / totalWeight : 0;
+  const coverage = pids.length ? submitted / pids.length : 0;
+  const avgMargin = marginN[best] ? marginSum[best] / marginN[best] : 0;
+
+  const coverageFactor = 0.55 + 0.45 * coverage;
+  const marginFactor = best === "D" ? 0.88 : Math.min(1, 0.88 + 0.04 * Math.min(avgMargin, 3));
+  const confidence = Math.min(0.99, weightedShare * coverageFactor * marginFactor);
+
+  const minimumPicks = Math.min(3, pids.length);
+  const eligible = pids.length >= 2 && submitted >= minimumPicks && coverage >= 0.50;
+  const unanimous = pids.length >= 2 && submitted === pids.length
+    && rawOutcomes.length === pids.length && rawOutcomes.every(o => o === best);
+
+  return {
+    m, best, weights, submitted, totalPlayers:pids.length,
+    coverage, weightedShare, avgMargin, confidence, eligible, unanimous,
+    leader, pick:submitted ? betPickLabel(m, best) : "Waiting for picks"
+  };
+}
+
+function betableMW(){
+  for (let i = SCORING_START_MW; i <= TOTAL_MW; i++){
+    if (MW[i-1].some(m => !locked(m) && !results[m.id])) return i;
+  }
+  return TOTAL_MW;
+}
+
+const betPct = x => Math.round(Math.max(0, Math.min(1, x || 0)) * 100);
+
+function betLegHtml(a, i){
+  return '<div class="bt-leg">'
+    + '<span class="num">' + (i+1) + '</span>'
+    + '<div class="main"><div class="game">' + esc(teamNm(a.m.h)) + ' v ' + esc(teamNm(a.m.a)) + '</div>'
+    + '<div class="pick">' + esc(a.pick) + '</div></div>'
+    + '<span class="bt-conf">' + betPct(a.confidence) + '%</span></div>';
+}
+
+function betUnanimousCard(a, i){
+  const chosen = i < 2;
+  return '<div class="bt-card' + (chosen ? ' hot' : '') + '">'
+    + '<div class="game">' + esc(teamNm(a.m.h)) + ' v ' + esc(teamNm(a.m.a)) + '</div>'
+    + '<div class="pick">' + esc(a.pick) + '</div>'
+    + '<div class="meta"><span class="bt-pill' + (chosen ? '' : ' watch') + '">'
+    + (chosen ? 'INDIVIDUAL PICK' : 'WATCHLIST') + '</span><span>' + a.submitted + '/' + a.totalPlayers
+    + ' users agree</span></div>'
+    + '<div class="bt-meter"><i style="width:' + betPct(a.confidence) + '%"></i></div>'
+    + '<div class="meta"><span>Betable confidence ' + betPct(a.confidence) + '%</span>'
+    + (a.avgMargin ? '<span>avg margin ' + a.avgMargin.toFixed(1) + '</span>' : '') + '</div></div>';
+}
+
+function betSignalRow(a){
+  const cls = a.confidence > BET_COMBO_THRESHOLD ? '' : ' mid';
+  return '<div class="bt-row"><div class="game"><b>' + esc(teamNm(a.m.h)) + ' v ' + esc(teamNm(a.m.a)) + '</b>'
+    + '<small>' + esc(a.pick) + ' · ' + a.submitted + '/' + a.totalPlayers + ' picks · '
+    + Math.round(a.coverage * 100) + '% coverage</small></div>'
+    + '<span class="bt-conf' + cls + '">' + betPct(a.confidence) + '%</span></div>';
+}
+
+function viewBetable(){
+  const week = betableMW();
+  const upcoming = MW[week-1].filter(m => !locked(m) && !results[m.id]);
+  const analyses = upcoming.map(betAnalysis)
+    .sort((a,b) => b.confidence - a.confidence || b.weightedShare - a.weightedShare);
+  const leader = betLeaderPid();
+  const leaderName = leader && players[leader] ? players[leader].name : null;
+
+  const eligible = analyses.filter(a => a.eligible);
+  /* Combo legs are winner markets only; draws still belong in unanimous/individual picks. */
+  const strong = eligible.filter(a => a.best !== "D" && a.confidence > BET_COMBO_THRESHOLD).slice(0,5);
+  const combo = strong.length >= 3 ? strong : [];
+  const comboFloor = combo.length ? Math.min(...combo.map(a => a.confidence)) : 0;
+
+  const unanimous = analyses.filter(a => a.unanimous).slice(0,3);
+  const individual = unanimous.slice(0,2);
+
+  let comboHtml;
+  if (combo.length){
+    comboHtml = '<div class="bt-good"><b>Combo recommendation · ' + combo.length + ' legs</b>'
+      + '<div class="bt-sub">Every leg clears the 75% Betable-confidence floor. Weakest leg: <b style="display:inline;color:var(--green)">'
+      + betPct(comboFloor) + '%</b>.</div></div>'
+      + '<div class="bt-combo">' + combo.map(betLegHtml).join('') + '</div>';
+  } else {
+    comboHtml = '<div class="bt-risk"><b>This week: bet one game at a time — it\'s risky.</b>'
+      + '<div class="bt-sub">Fewer than three matches currently clear the 75% crowd-confidence floor, so Betable will not build a combo.</div></div>';
+  }
+
+  let unanimousHtml;
+  if (unanimous.length){
+    unanimousHtml = '<div class="bt-grid">' + unanimous.map(betUnanimousCard).join('') + '</div>';
+    if (individual.length < 2)
+      unanimousHtml += '<div class="bt-empty">Only one full-group unanimous match exists right now, so there is only one individual recommendation.</div>';
+  } else {
+    unanimousHtml = '<div class="bt-empty">No full-group unanimous matches yet. This section fills only when <b>every registered player</b> has submitted a complete prediction for a match and all call the same win/draw/loss outcome.</div>';
+  }
+
+  const leaderNote = leaderName
+    ? 'Current unique scoreboard leader <b>' + esc(leaderName) + '</b> receives 1.50× vote weight.'
+    : 'No unique scored scoreboard leader yet, so all users currently have equal rank weight.';
+  const nPlayers = Object.keys(players).length;
+  const coverageNote = nPlayers ? nPlayers + ' registered player' + (nPlayers === 1 ? '' : 's') + ' in the confidence pool.' : 'No registered players yet.';
+
+  return '<div class="panel"><div class="bt-hero"><h2>BETABLE · MATCHWEEK ' + week + '</h2>'
+    + '<p>Turns the prediction league into a crowd signal. Larger predicted winning margins count as stronger conviction, and the scoreboard leader gets extra weight.</p>'
+    + '<div class="bt-note">' + leaderNote + ' ' + coverageNote + ' These percentages are <b>group-confidence scores, not bookmaker odds or calibrated win probabilities</b>.</div></div>'
+    + '<div class="panel-h"><h3>Combo</h3><small>3–5 strongest legs</small></div>' + comboHtml + '</div>'
+    + '<div class="panel"><div class="panel-h"><h3>Unanimous radar</h3><small>top 3 · first 2 are individual picks</small></div>' + unanimousHtml + '</div>'
+    + '<div class="panel"><div class="panel-h"><h3>All crowd signals</h3><small>upcoming MW' + week + '</small></div>'
+    + (analyses.length ? '<div class="bt-list">' + analyses.map(betSignalRow).join('') + '</div>'
+       : '<div class="bt-empty">No upcoming matches remain in this matchweek.</div>') + '</div>'
+    + '<div class="panel"><div class="prose"><b>How Betable confidence works.</b> A complete prediction is one vote for home win, draw, or away win. '
+    + 'A larger predicted goal difference increases that vote\'s weight; the unique #1 on the scoreboard gets 1.50× weight; and low participation is penalized. '
+    + 'Combo recommendations appear only when at least three matches independently clear 75%. Treat this as entertainment and group consensus, not a guarantee or stake-sizing advice.</div></div>';
+}
+
 /* ══ FANZONE / FAN BATTLES ═══════════════════════════════════════════════
    Everyone can read and react. Only supporters of the two clubs in a fixture
    can write in that match thread. Messages are short, chronological, and
@@ -1064,10 +1299,11 @@ const REACTIONS = ["😂","🔥","👏","😡","💀","❤️"];
 const fansOf = code => sortedPids().filter(pid => fans[pid] === code);
 const myClub = () => (me && fans[me]) || null;
 
-/* Matches where both sides have at least one supporter, nearest first, with
-   the last few days retained so the post-match arguments do not vanish. */
+/* Matches where at least one side has a supporter, nearest first, with
+   the last few days retained so the post-match arguments do not vanish.
+   This lets one fanbase start the noise even before the opposition arrives. */
 function derbies(limit){
-  const live = ALL.filter(m => fansOf(m.h).length && fansOf(m.a).length);
+  const live = ALL.filter(m => fansOf(m.h).length || fansOf(m.a).length);
   const cutoff = now() - 3 * 86400000;
   return live.filter(m => koOf(m) > cutoff)
     .sort((a, b) => koOf(a) - koOf(b))
@@ -1272,6 +1508,7 @@ function paint(){
   if (view === "fx") host.innerHTML = viewFixtures();
   if (view === "tb") host.innerHTML = viewTable();
   if (view === "lb") host.innerHTML = viewBoard();
+  if (view === "bt") host.innerHTML = viewBetable();
   if (view === "fz") host.innerHTML = viewFanzone();
   if (view === "ru") host.innerHTML = viewRules();
   restoreFocus(keep);
@@ -1826,13 +2063,13 @@ function viewFanzone(){
     + '<div class="gb-note">Your club decides which match threads you can write in. Everyone can read and react.</div>'
     + "</div></div>";
 
-  /* matches where both sets of fans are represented */
+  /* nearby matches with at least one represented fanbase */
   const ds = derbies(6);
   let clash = "";
   if (!ds.length){
     clash = '<div class="panel"><div class="panel-h"><h3>Fan Battles</h3><small>nothing brewing</small></div>'
       + '<div class="empty" style="padding:26px 18px">'
-      + (mine ? "No nearby fixture has supporters on both sides yet.<br>Get more people to pick a team."
+      + (mine ? "No nearby fixture has a supporter yet.<br>Once someone picks a club, its nearby matches become Fan Battles."
               : "Pick your club above. You can still read and react once a battle appears.") + "</div></div>";
   } else {
     clash = ds.map(m => fanClash(m)).join("");
@@ -1975,6 +2212,15 @@ function viewRules(){
     + "<li><b>Only fully scored matchweeks count</b>, so a part-entered week can't hand anyone a "
     + "free week at the top.</li>"
     + "<li>Badges are for glory only — they don't add to your points.</li>"
+    + "</ul></div></div>"
+
+    + '<div class="panel"><div class="panel-h"><h3>Betable</h3><small>crowd signal, not odds</small></div>'
+    + '<div class="prose"><ul>'
+    + "<li><b>Every complete prediction votes home win, draw or away win.</b> A larger predicted winning margin carries more weight.</li>"
+    + "<li><b>The unique #1 on the scoreboard gets 1.50× weight</b> in Betable recommendations. If first place is tied, nobody gets the leader boost.</li>"
+    + "<li><b>A combo needs 3–5 legs and every leg must clear 75% Betable confidence.</b> If fewer than three do, Betable says to go one game at a time.</li>"
+    + "<li><b>Unanimous radar requires every registered player to have predicted the match</b> and every prediction to call the same win/draw/loss result. The two strongest become individual picks.</li>"
+    + "<li>Betable confidence is a group-consensus score. It is not bookmaker odds, a calibrated probability, or a guarantee.</li>"
     + "</ul></div></div>"
 
     + '<div class="panel"><div class="panel-h"><h3>Fanzone</h3><small>Fan Battles</small></div>'
