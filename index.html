@@ -245,9 +245,16 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .ft-score i{font-style:normal;color:var(--txt3);font-size:19px;position:relative;top:-2px}
 
 .mc-foot{border-top:1px solid var(--line);padding:8px 11px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;background:rgba(0,0,0,.16)}
-.chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:6px;
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:7px;
   background:rgba(255,255,255,.045);border:1px solid var(--line);white-space:nowrap}
-.chip .cn{color:var(--c,var(--txt2));font-weight:700}
+.chip .cn{
+  background:var(--c,var(--txt2));
+  color:#12001a;
+  font-size:9.5px;
+  font-weight:800;
+  padding:3px 7px;
+  border-radius:5px;
+}
 .chip .cs{font-family:'JetBrains Mono',monospace;color:var(--txt2);font-size:10px}
 .chip .cp{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;padding-left:3px;border-left:1px solid var(--line2)}
 .chip.p3{background:rgba(0,255,135,.13);border-color:rgba(0,255,135,.3)} .chip.p3 .cp{color:var(--green)}
@@ -510,7 +517,14 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
 .tp-picks{display:flex;flex-wrap:wrap;gap:5px;padding-top:4px}
 .tp-chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 8px;
   border-radius:6px;background:rgba(255,255,255,.045);border:1px solid var(--line);white-space:nowrap}
-.tp-chip .cn{color:var(--c);font-weight:700}
+.tp-chip .cn{
+  background:var(--c);
+  color:#12001a;
+  font-size:9.5px;
+  font-weight:800;
+  padding:3px 7px;
+  border-radius:5px;
+}
 .tp-chip .cs{color:var(--txt2);font-size:10px}
 .tp-chip .cp{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;color:var(--green);
   padding-left:4px;border-left:1px solid var(--line2)}
@@ -604,7 +618,7 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
       <div class="fld">
         <label>Your player color</label>
         <div class="color-grid" id="upColorGrid"></div>
-        <div class="color-note">Pick a unique color. It follows your name across predictions, the scoreboard and Fanzone so people can recognize you at a glance.</div>
+        <div class="color-note">Choose any color you like. Your full name is always shown with it, so different players may use the same color.</div>
       </div>
       <button class="btn" onclick="doSignUp()">Create account &amp; play</button>
       <div class="err" id="errUp" hidden><span>⚠</span><span id="errUpTxt"></span></div>
@@ -634,7 +648,7 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
   <div class="sheet" style="max-width:390px">
     <div class="mark">Player identity</div>
     <h2>Choose your color</h2>
-    <p class="lede">This is your visual signature beside predictions, rankings and messages. Colors already used by another player are unavailable.</p>
+    <p class="lede">Choose any color you like. Your full name identifies you, so colors can be shared by different players.</p>
     <div class="color-grid" id="profileColorGrid"></div>
     <button class="btn" style="margin-top:18px" onclick="saveMyColor()">Save color</button>
     <button class="btn ghost" style="margin-top:8px" onclick="closeColorPicker()">Cancel</button>
@@ -1360,17 +1374,31 @@ function betLegHtml(a,i){
   return '<div class="bt-leg"><span class="num">'+(i+1)+'</span><div class="main">'
     +'<div class="game">'+esc(teamNm(a.m.h))+' v '+esc(teamNm(a.m.a))+'</div>'
     +'<div class="pick">'+esc(a.pick)+'</div>'
-    +'<div style="font-size:10px;color:var(--txt3);margin-top:2px">'+esc(betConsensusText(a))
-    +' · model '+betPct(a.modelProb)+'%</div><div class="bt-model-probs">'+esc(betModelText(a))+'</div></div>'
-    +'<span class="bt-conf">'+betPct(a.rating)+'</span></div>';
+    +'<div style="font-size:10px;color:var(--txt3);margin-top:2px">Model '+betPct(a.modelProb)+'% · '+esc(betConsensusText(a))+'</div></div>'
+    +'<span class="bt-conf">'+betPct(a.modelProb)+'%</span></div>';
 }
 function betIndividualCard(a,i){
   return '<div class="bt-card hot"><div class="game">'+esc(teamNm(a.m.h))+' v '+esc(teamNm(a.m.a))+'</div>'
-    +'<div class="pick">'+esc(a.pick)+'</div><div class="meta"><span class="bt-pill">INDIVIDUAL #'+(i+1)+'</span>'
-    +'<span>'+esc(betConsensusText(a))+'</span></div><div class="bt-meter"><i style="width:'+betPct(a.rating)+'%"></i></div>'
-    +'<div class="meta"><span>model '+betPct(a.modelProb)+'%</span><span>crowd history '+betPct(a.reliability)+'%</span>'
-    +(a.avgMargin?'<span>predicted margin '+a.avgMargin.toFixed(1)+'</span>':'')+'</div>'
-    +'<div class="bt-model-probs">'+esc(betModelText(a))+'</div></div>';
+    +'<div class="pick">'+esc(a.pick)+'</div><div class="meta"><span class="bt-pill">PICK #'+(i+1)+'</span>'
+    +'<span>Model '+betPct(a.modelProb)+'%</span><span>'+esc(betConsensusText(a))+'</span></div></div>';
+}
+
+function betScanRow(a){
+  const game=esc(teamNm(a.m.h))+' v '+esc(teamNm(a.m.a));
+  let modelCls='no', modelLabel='MODEL —';
+  if(a.model){
+    if(a.basePass&&a.liveSafe){modelCls='ok';modelLabel='MODEL ✓';}
+    else if(a.basePass&&!a.liveSafe){modelLabel='VETO';}
+    else if(!a.modelAgree){modelLabel='MODEL ✕';}
+    else{modelLabel='MODEL '+betPct(a.baseProb)+'%';}
+  }
+  const crowdCls=a.crowdQualifies?'ok':'no';
+  const crowdLabel=a.crowdQualifies?'CROWD ✓':(!a.allSubmitted?a.submitted+'/'+a.totalPlayers:'CROWD ✕');
+  const probs=a.model?'H '+betPct(a.model.p.H)+' · D '+betPct(a.model.p.D)+' · A '+betPct(a.model.p.A):'Model pending';
+  return '<div class="bt-row"><div class="game"><b>'+game+'</b><small>'+esc(probs)+'</small></div>'
+    +'<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">'
+    +'<span class="bt-gate '+modelCls+'">'+esc(modelLabel)+'</span>'
+    +'<span class="bt-gate '+crowdCls+'">'+esc(crowdLabel)+'</span></div></div>';
 }
 
 function btOpt(value,label,current){return '<option value="'+value+'"'+(+current===+value?' selected':'')+'>'+label+'</option>';}
@@ -1412,47 +1440,38 @@ function clearBetContext(mid){
 
 function viewBetable(){
   const week=betableMW(), upcoming=MW[week-1].filter(m=>!locked(m)&&!results[m.id]);
-  const analyses=upcoming.map(betAnalysis).sort((a,b)=>(Number(b.qualifies)-Number(a.qualifies))||(b.rating-a.rating)||(b.modelProb-a.modelProb));
+  const analyses=upcoming.map(betAnalysis).sort((a,b)=>(Number(b.qualifies)-Number(a.qualifies))||(b.modelProb-a.modelProb)||(b.rating-a.rating));
   const qualified=analyses.filter(a=>a.qualifies);
   const comboPool=qualified.filter(a=>a.best!=="D");
   const combo=comboPool.length>=BET_COMBO_MIN?comboPool.slice(0,BET_COMBO_MAX):[];
   const individuals=qualified.slice(0,2);
-  const leader=betLeaderPid(), nPlayers=Object.keys(players).length;
-  const leaderName=leader&&players[leader]?players[leader].name:null;
   const gate=betModelThreshold();
   const modelName=(modelMeta&&modelMeta.selectedModel)||null;
   const modelReady=!!modelName&&analyses.some(a=>a.model);
-  const evals=(modelMeta&&modelMeta.evaluation)||{};
-  const fmtLL=x=>x&&Number.isFinite(+x.log_loss)?(+x.log_loss).toFixed(3):'—';
 
-  let comboHtml=combo.length
-    ? '<div class="bt-good"><b>ONE COMBO · '+combo.length+' legs</b><div class="bt-sub">Every leg passed both gates: effective crowd unanimity and independent calibrated-model agreement.</div></div><div class="bt-combo">'+combo.map(betLegHtml).join('')+'</div>'
-    : '<div class="bt-risk"><b>No combo recommendation this week.</b><div class="bt-sub">Betable needs at least three upcoming win picks that pass both the crowd and football-model gates. It will not add a weak leg just to create a combo.</div></div>';
-  let individualHtml=individuals.length===2?'<div class="bt-grid">'+individuals.map(betIndividualCard).join('')+'</div>'
-    : individuals.length===1?'<div class="bt-grid">'+betIndividualCard(individuals[0],0)+'</div><div class="bt-empty">Only one match passes both gates. No second pick is being forced.</div>'
-    : '<div class="bt-empty">No individual recommendation yet. Crowd consensus and the historical model must independently agree.</div>';
+  const comboHtml=combo.length
+    ? '<div class="bt-good"><b>COMBO · '+combo.length+' LEGS</b></div><div class="bt-combo">'+combo.map(betLegHtml).join('')+'</div>'
+    : '<div class="bt-risk"><b>NO COMBO</b><div class="bt-sub">Fewer than 3 matches passed both gates.</div></div>';
 
-  const leaderNote=leaderName?'Scoreboard #1 <b>'+esc(leaderName)+'</b> counts twice in the crowd gate. With '+nPlayers+' players, '+Math.max(0,nPlayers-1)+' agreeing can reach '+nPlayers+'/'+nPlayers+' only when #1 is among them.'
-    :'No official scored #1 yet, so the crowd gate requires true unanimity.';
-  const modelNote=modelReady
-    ? '<b>'+esc(modelName)+'</b> · model gate ≥ '+betPct(gate.minProb)+'% with ≥ '+betPct(gate.minMargin)+'-point separation. '
-      +'Log loss: validation '+fmtLL(evals.validation)+' · 2024/25 '+fmtLL(evals.test_2425)+' · 2025/26 '+fmtLL(evals.test_2526)+'.'
-    : '<b>Historical model waiting for its first training/publish run.</b> Betable will not issue recommendations until model probabilities are available.';
-  const supportWarn=modelMeta&&modelMeta.bettable&&modelMeta.bettable.gate_supported_65pct===false
-    ? '<div class="bt-note">Validation did not support a threshold with a demonstrated 65% hit rate at adequate sample size, so the engine is using its conservative fallback probability gate. This is shown rather than hidden.</div>':'';
+  const individualHtml=individuals.length
+    ? '<div class="bt-grid">'+individuals.map(betIndividualCard).join('')+'</div>'
+    : '<div class="bt-empty">No qualifying individual picks.</div>';
 
-  return '<div class="panel"><div class="bt-hero"><h2>BETABLE · MATCHWEEK '+week+'</h2>'
-    +'<p><b>One combo. Two individuals. Two independent signals.</b> A bet is recommended only when the weighted crowd and the calibrated football model choose the same outcome.</p>'
-    +'<div class="bt-note">'+leaderNote+'</div></div>'
-    +'<div class="bt-model"><b>FOOTBALL MODEL</b><div class="line">'+modelNote+'</div><div class="line">Important injuries and manager/tactical/formation changes are a conservative veto-only M3 layer: they can downgrade or remove a recommendation, but cannot create one.</div>'+supportWarn+'</div>'
-    +'<div class="panel-h"><h3>This week\'s combo</h3><small>one ticket · 3–5 matches</small></div>'+comboHtml+'</div>'
-    +'<div class="panel"><div class="panel-h"><h3>Individual bets</h3><small>two strongest dual-signal picks</small></div>'+individualHtml+'</div>'
-    +'<div class="panel"><div class="prose"><b>Qualification.</b><ul>'
-    +'<li><b>Crowd:</b> every registered player predicts the match. #1 contributes one extra vote. The effective vote must reach full consensus.</li>'
-    +'<li><b>Model:</b> the independently trained historical model must choose the same H/D/A outcome and clear its validation-derived probability and separation gates.</li>'
-    +'<li><b>Ranking:</b> once both gates pass, calibrated model probability carries most weight; crowd prediction history and predicted goal margin break close calls.</li>'
-    +'<li><b>Live news:</b> important absences and tactical/formation changes may only downgrade/veto a base-model pick until M3 is historically validated. Existing long-term absences should normally be left at zero because recent form already contains much of their effect.</li>'
-    +'</ul></div></div>'+betContextPanel(week);
+  const scanHtml=analyses.length
+    ? '<div class="bt-list">'+analyses.map(betScanRow).join('')+'</div>'
+    : '<div class="bt-empty">No open Matchweek '+week+' fixtures.</div>';
+
+  const modelStatus=modelReady
+    ? esc(modelName)+' · ≥ '+betPct(gate.minProb)+'% · '+betPct(gate.minMargin)+'pt edge'
+    : 'Model pending';
+
+  return '<div class="panel"><div class="bt-hero"><h2>BETABLE · MW '+week+'</h2>'
+    +'<p>Model + crowd consensus</p></div>'
+    +'<div class="bt-model"><b>'+modelStatus+'</b></div>'
+    +'<div class="panel-h"><h3>Combo</h3><small>3–5 wins</small></div>'+comboHtml
+    +'<div class="panel-h"><h3>Individual picks</h3><small>top 2</small></div>'+individualHtml
+    +'<div class="panel-h"><h3>Match scan</h3><small>model · crowd</small></div>'+scanHtml
+    +'</div>'+betContextPanel(week);
 }
 
 /* ══ FANZONE / FAN BATTLES ═══════════════════════════════════════════════
@@ -1514,12 +1533,10 @@ let authMode = "in", pickedPid = null;
 let signupColor = null, profileColorDraft = null;
 
 function colorButtons(selected, exceptPid, handlerName){
-  const used = usedColors(exceptPid);
   return PAL.map((c, i) => {
-    const taken = used.has(i);
     return '<button type="button" class="color-swatch' + (selected === i ? ' on' : '') + '"'
       + ' style="--c:' + c + '"'
-      + (taken ? ' disabled title="Already used"' : ' title="Choose this color" onclick="' + handlerName + '(' + i + ')"')
+      + ' title="Choose this color" onclick="' + handlerName + '(' + i + ')"'
       + ' aria-label="Player color ' + (i+1) + '"></button>';
   }).join("");
 }
@@ -1527,12 +1544,10 @@ function colorButtons(selected, exceptPid, handlerName){
 function renderSignupColors(){
   const box = document.getElementById("upColorGrid");
   if (!box) return;
-  const used = usedColors(null);
-  if (signupColor === null || used.has(signupColor)) signupColor = firstFreeColor(null);
+  if (signupColor === null) signupColor = Object.keys(players).length % PAL.length;
   box.innerHTML = colorButtons(signupColor, null, "chooseSignupColor");
 }
 function chooseSignupColor(i){
-  if (usedColors(null).has(i)) return;
   signupColor = i;
   renderSignupColors();
 }
@@ -1553,19 +1568,19 @@ function renderProfileColors(){
   box.innerHTML = colorButtons(profileColorDraft, me, "chooseProfileColor");
 }
 function chooseProfileColor(i){
-  if (!me || usedColors(me).has(i)) return;
+  if (!me) return;
   profileColorDraft = i;
   renderProfileColors();
 }
+
 function saveMyColor(){
   if (!me || profileColorDraft === null) return;
-  if (usedColors(me).has(profileColorDraft)){
-    toast("Someone just took that color — choose another", "bad");
-    renderProfileColors();
-    return;
-  }
+
   ref("players/" + me + "/ci").set(profileColorDraft)
-    .then(() => { closeColorPicker(); toast("Your player color is updated", "good"); })
+    .then(() => {
+      closeColorPicker();
+      toast("Your player color is updated", "good");
+    })
     .catch(() => toast("Couldn't save your color", "bad"));
 }
 
@@ -1639,8 +1654,7 @@ function doSignUp(){
   if (pw !== pw2)        return authErr("Up", "The two passwords don't match.");
   if (Object.values(players).some(p => p.name.toLowerCase() === name.toLowerCase()))
     return authErr("Up", "That name is already taken.");
-  if (signupColor === null) signupColor = firstFreeColor(null);
-  if (usedColors(null).has(signupColor)) return authErr("Up", "That color was just taken. Pick another one.");
+  if (signupColor === null) signupColor = Object.keys(players).length % PAL.length;
   const pid = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   ref("players/" + pid).set({ name, pw: hashPw(pw), ci: signupColor, joined: Date.now() })
     .then(() => enter(pid))
@@ -1827,7 +1841,7 @@ function titlePanel(){
       .map(pid => {
         const t = titles[pid] || {}, c = colr(players[pid].ci || 0), s = titleScore(pid);
         return '<span class="tp-chip" style="--c:' + c + '">'
-          + '<span class="cn">' + esc(initials(players[pid].name)) + "</span>"
+          + '<span class="cn">' + esc(players[pid].name) + "</span>"
           + '<span class="cs">' + esc(t.first ? teamNm(t.first) : "—") + " · "
           + esc(t.second ? teamNm(t.second) : "—") + "</span>"
           + (s.settled ? '<span class="cp">+' + s.total + "</span>" : "") + "</span>";
@@ -2000,7 +2014,7 @@ function matchCard(m){
       const p = predOf(m.id, pid), v = r ? pointsFor(m.id, pid) : null;
       const c = colr(players[pid].ci || 0);
       return '<span class="chip' + (v !== null ? " p" + v : "") + (pid === me ? " me" : "") + '" style="--c:' + c + '">'
-        + '<span class="cn">' + esc(initials(players[pid].name)) + "</span>"
+        + '<span class="cn">' + esc(players[pid].name) + "</span>"
         + '<span class="cs">' + (full(p) ? p.h + "–" + p.a : "—") + "</span>"
         + (v !== null ? '<span class="cp">' + (v > 0 ? "+" + v : "0") + "</span>" : "")
         + "</span>";
