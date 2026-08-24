@@ -63,6 +63,10 @@ TEST1_CODE = "2425"
 TEST2_CODE = "2526"
 ALL_CODES = TRAIN_CODES + [VAL_CODE, TEST1_CODE, TEST2_CODE]
 
+# Predictor competition / Betable starts at Matchweek 2. MW1 results may still
+# update current-season team state, but MW1 is never a Betable target.
+BETTABLE_START_MW = 2
+
 SEASON_LABEL = {
     "1718": "2017-18", "1819": "2018-19", "1920": "2019-20",
     "2021": "2020-21", "2122": "2021-22", "2223": "2022-23",
@@ -557,10 +561,15 @@ def current_state_from_history(hist_state: TeamState, fixtures: List[dict], resu
 
 
 def current_matchweek(fixtures: List[dict], results: dict) -> int:
+    """Return the active Betable matchweek, never MW1.
+
+    MW1 is the site's launch/warm-up week. Completed MW1 results are still fed
+    into the current-season TeamState, but model recommendations start at MW2.
+    """
     max_mw = max(f["mw"] for f in fixtures)
-    for mw in range(1, max_mw + 1):
+    for mw in range(BETTABLE_START_MW, max_mw + 1):
         week = [f for f in fixtures if f["mw"] == mw]
-        if any(f["id"] not in (results or {}) for f in week):
+        if week and any(f["id"] not in (results or {}) for f in week):
             return mw
     return max_mw
 
