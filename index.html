@@ -390,6 +390,26 @@ tbody tr.mine{background:rgba(0,255,135,.055)}
 .bt-empty{padding:18px 13px;color:var(--txt3);font-size:11.5px;line-height:1.6}
 @media(max-width:520px){.bt-grid{grid-template-columns:1fr}}
 
+
+.bt-model{margin:10px 12px;padding:10px 11px;border:1px solid rgba(4,245,255,.22);border-radius:11px;background:rgba(4,245,255,.045)}
+.bt-model b{font-size:11.5px;color:var(--cyan)}
+.bt-model .line{font-size:10.5px;color:var(--txt2);margin-top:3px;line-height:1.5}
+.bt-model-probs{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--txt3);margin-top:4px}
+.bt-gate{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:800;padding:2px 5px;border-radius:4px}
+.bt-gate.ok{background:rgba(0,255,135,.13);color:var(--green)}
+.bt-gate.no{background:rgba(255,176,32,.11);color:var(--amber)}
+.bt-context{display:flex;flex-direction:column}
+.bt-ctx-row{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.05)}
+.bt-ctx-row:last-child{border-bottom:none}
+.bt-ctx-game{font-size:12px;font-weight:700;margin-bottom:7px}
+.bt-ctx-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.bt-ctx-controls label{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);font-weight:700}
+.bt-ctx-controls select,.bt-ctx-controls input{width:100%;height:32px;margin-top:3px;border:1px solid var(--line2);border-radius:8px;background:rgba(0,0,0,.3);padding:0 7px;font-size:10.5px;outline:none}
+.bt-ctx-controls input{grid-column:1/-1}
+.bt-ctx-actions{display:flex;gap:6px;margin-top:7px}
+.bt-ctx-actions .abtn{height:28px}
+@media(max-width:520px){.bt-ctx-controls{grid-template-columns:1fr}}
+
 /* ══ fanzone / fan battles ══ */
 .gb-note{font-size:11px;color:var(--txt3);padding-top:2px;line-height:1.45}
 .fz-match .panel-h h3{font-size:17px}
@@ -834,6 +854,7 @@ let players = {}, preds = {}, results = {}, koFix = {};
 let titles = {}, finalTop = {};
 let scorers = {}, crestImgs = {}, meta = {};
 let fans = {}, fanThreads = {};
+let modelPredictions = {}, modelMeta = {}, modelContext = {};
 let me = null, isAdmin = false, clockSkew = 0;
 let view = "fx", curMW = 1, ready = false, lastWrite = 0;
 
@@ -860,6 +881,9 @@ ref("scorers").on("value", s => { scorers = s.val() || {}; if (me) paint(); });
 ref("crests").on("value",  s => { crestImgs = s.val() || {}; if (me) paint(); });
 ref("fans").on("value",    s => { fans      = s.val() || {}; if (me) paint(); });
 ref("fanzone").on("value", s => { fanThreads = s.val() || {}; if (me) paint(); });
+ref("modelPredictions").on("value", s => { modelPredictions = s.val() || {}; if (me) paint(); });
+ref("modelMeta").on("value", s => { modelMeta = s.val() || {}; if (me) paint(); });
+ref("modelContext").on("value", s => { modelContext = s.val() || {}; if (me) paint(); });
 
 /* One-time launch migration: remove every MW1 prediction from Firebase.
    Because MW1 is also disabled in the UI, those predictions cannot come back.
@@ -1154,31 +1178,24 @@ function leagueTable(){
 }
 
 /* ══ BETABLE ═════════════════════════════════════════════════════════════
-   Recommendation logic is intentionally strict.
+   Two independent signals must agree before a recommendation is shown:
 
-   QUALIFICATION GATE
-   - Every registered player must have a complete prediction for the match.
-   - Each player contributes one outcome vote: home / draw / away.
-   - The current #1 on the Scoreboard counts twice (one normal vote + one
-     leader bonus vote) once the competition has scored matches.
-   - A pick qualifies only when its support units reach the full player count.
+   1) CROWD GATE
+      - every registered player has predicted the match;
+      - the effective vote reaches unanimity;
+      - Scoreboard #1 counts twice once official scoring has started.
 
-   Example with 14 players:
-     14 agree                         -> qualifies
-     13 agree + scoreboard #1 agrees -> 13 + 1 bonus = 14/14 -> qualifies
-     13 agree but #1 dissents         -> 13/14 -> does NOT qualify
-     12 agree + #1 agrees             -> 13/14 -> does NOT qualify
+   2) FOOTBALL MODEL GATE
+      - calibrated historical model independently predicts the same H/D/A;
+      - its probability and separation from the second outcome exceed thresholds
+        learned from the validation season rather than invented in the UI.
 
-   RANKING / LEARNING
-   Once a match passes that strict gate, Betable ranks qualified picks using:
-   - raw agreement (true unanimity ranks above a leader-rescued 13/14),
-   - average predicted winning margin (bigger margin = stronger conviction),
-   - historical outcome hit-rate of the supporters of that pick.
-
-   The historical component uses Bayesian smoothing, so early weeks do not
-   overreact to tiny samples. As the season grows, the group members who have
-   actually called more winners correctly contribute a stronger reliability
-   signal to the ranking. The qualification gate itself stays strict.
+   M0 = Elo
+   M1 = Elo + form + venue
+   M2 = M1 + compact attack/defence form
+   M3 = a deliberately bounded live layer for important absences and
+        manager/tactical/formation news. Until historically validated, M3 is
+        veto-only: it may downgrade/remove a pick but may never create one.
    ════════════════════════════════════════════════════════════════════════ */
 const BET_COMBO_MIN = 3;
 const BET_COMBO_MAX = 5;
@@ -1190,32 +1207,23 @@ function betOutcome(p){
   if (p.h < p.a) return "A";
   return "D";
 }
-
 function betActualOutcome(r){
   if (!r) return null;
   if (r.h > r.a) return "H";
   if (r.h < r.a) return "A";
   return "D";
 }
-
 function betPickLabel(m, outcome){
   if (outcome === "H") return teamNm(m.h) + " to win";
   if (outcome === "A") return teamNm(m.a) + " to win";
   return "Draw";
 }
-
-/* The first visible player on the current scoreboard counts twice. Before
-   anyone has an official scored match, there is no leader bonus. */
 function betLeaderPid(){
   const rk = rankedPids(), t = tallies();
   if (!rk.length) return null;
   const first = t[rk[0]];
   return first && first.played > 0 ? rk[0] : null;
 }
-
-/* Historical win/draw/loss accuracy, shrunk toward 50% by a six-match prior.
-   This is used to RANK already-qualified bets, never to weaken the consensus
-   requirement. */
 function betHistory(pid){
   let picks = 0, hits = 0;
   ALL.forEach(m => {
@@ -1228,165 +1236,223 @@ function betHistory(pid){
   return { picks, hits, rate:(hits + 3) / (picks + 6) };
 }
 
-function betAnalysis(m){
-  const pids = Object.keys(players);
-  const n = pids.length;
-  const leader = betLeaderPid();
-  const raw = { H:0, D:0, A:0 };
-  const marginSum = { H:0, D:0, A:0 };
-  const marginN = { H:0, D:0, A:0 };
-  const relSum = { H:0, D:0, A:0 };
-  const relWeight = { H:0, D:0, A:0 };
-  let submitted = 0;
+const clamp01 = x => Math.max(0, Math.min(1, Number(x) || 0));
+function softmax3(z){
+  const mx = Math.max(...z), e = z.map(v => Math.exp(v - mx)), sm = e.reduce((a,b)=>a+b,0) || 1;
+  return e.map(v => v / sm);
+}
 
-  pids.forEach(pid => {
-    const p = predOf(m.id, pid);
-    if (!full(p)) return;
-    const outcome = betOutcome(p);
-    const margin = Math.abs(p.h - p.a);
-    const rankWeight = pid === leader ? 2 : 1;
-    const hist = betHistory(pid);
-
-    submitted++;
-    raw[outcome]++;
-    marginSum[outcome] += margin;
-    marginN[outcome]++;
-    relSum[outcome] += hist.rate * rankWeight;
-    relWeight[outcome] += rankWeight;
-  });
-
-  const leaderPick = leader ? betOutcome(predOf(m.id, leader)) : null;
-  const supportUnits = {
-    H: raw.H + (leaderPick === "H" ? 1 : 0),
-    D: raw.D + (leaderPick === "D" ? 1 : 0),
-    A: raw.A + (leaderPick === "A" ? 1 : 0)
-  };
-
-  const outcomes = ["H","D","A"];
-  const best = outcomes.slice().sort((a,b) =>
-    (supportUnits[b] - supportUnits[a]) || (raw[b] - raw[a])
-  )[0];
-
-  const rawSupport = raw[best];
-  const weightedSupport = supportUnits[best];
-  const allSubmitted = n > 0 && submitted === n;
-  const qualifies = n >= BET_MIN_PLAYERS && allSubmitted && weightedSupport >= n;
-  const unanimous = allSubmitted && rawSupport === n;
-  const leaderRescue = qualifies && !unanimous && leaderPick === best;
-
-  const avgMargin = marginN[best] ? marginSum[best] / marginN[best] : 0;
-  const reliability = relWeight[best] ? relSum[best] / relWeight[best] : 0.5;
-  const agreement = n ? rawSupport / n : 0;
-  const marginSignal = best === "D" ? 0.33 : Math.min(1, avgMargin / 3);
-
-  /* Rating is only a ranking score, not a probability. Strict consensus above
-     determines whether Betable is willing to recommend the market at all. */
-  const rating = Math.max(0, Math.min(1,
-    0.65 * agreement + 0.20 * reliability + 0.15 * marginSignal
-  ));
-
+/* Apply the small live M3 context adjustment locally. This means an admin can
+   update a major injury or formation/tactical change and Betable reacts
+   immediately; the historical base probabilities remain untouched. */
+function betModelFor(mid){
+  const b = modelPredictions[mid];
+  if (!b || !Number.isFinite(+b.pH) || !Number.isFinite(+b.pD) || !Number.isFinite(+b.pA)) return null;
+  const ctx = modelContext[mid] || {};
+  const cfg = (((modelMeta || {}).m3 || {}).liveAdjustment) || {};
+  const inj = Number.isFinite(+cfg.injury_logit_per_level) ? +cfg.injury_logit_per_level : .075;
+  const tac = Number.isFinite(+cfg.tactical_logit_per_level) ? +cfg.tactical_logit_per_level : .055;
+  const uncT = Number.isFinite(+cfg.uncertainty_temperature) ? +cfg.uncertainty_temperature : .10;
+  const maxShift = Number.isFinite(+cfg.max_abs_logit_shift) ? +cfg.max_abs_logit_shift : .22;
+  const homeAbs = Math.max(0, Math.min(2, +ctx.homeAbsence || 0));
+  const awayAbs = Math.max(0, Math.min(2, +ctx.awayAbsence || 0));
+  const tactical = Math.max(-2, Math.min(2, +ctx.tacticalEdge || 0));
+  const uncertainty = Math.max(0, Math.min(1, +ctx.uncertainty || 0));
+  let shift = inj * (awayAbs - homeAbs) + tac * tactical;
+  shift = Math.max(-maxShift, Math.min(maxShift, shift));
+  const base = [clamp01(b.pH), clamp01(b.pD), clamp01(b.pA)];
+  const temp = 1 + uncT * uncertainty;
+  const live = softmax3([
+    (Math.log(Math.max(base[0],1e-9)) + shift) / temp,
+    Math.log(Math.max(base[1],1e-9)) / temp,
+    (Math.log(Math.max(base[2],1e-9)) - shift) / temp
+  ]);
+  const vals = {H:live[0], D:live[1], A:live[2]};
+  const baseVals = {H:base[0], D:base[1], A:base[2]};
+  const order = ["H","D","A"].sort((a,c)=>vals[c]-vals[a]);
+  const baseOrder = ["H","D","A"].sort((a,c)=>baseVals[c]-baseVals[a]);
   return {
-    m, best, leader, submitted, totalPlayers:n, rawSupport, weightedSupport,
-    allSubmitted, qualifies, unanimous, leaderRescue, avgMargin, reliability,
-    agreement, rating, pick:submitted ? betPickLabel(m, best) : "Waiting for picks"
+    p:vals, base:baseVals, pick:order[0], confidence:vals[order[0]],
+    margin:vals[order[0]]-vals[order[1]],
+    basePick:baseOrder[0], baseConfidence:baseVals[baseOrder[0]],
+    baseMargin:baseVals[baseOrder[0]]-baseVals[baseOrder[1]],
+    model:b.model || modelMeta.selectedModel || "model",
+    ctx, adjusted:Math.abs(shift) > 1e-8 || uncertainty > 0
   };
 }
 
-/* Betable stays on the current unfinished matchweek. It moves to the next
-   week only after every result from this week exists. */
+function betModelThreshold(){
+  const b = (modelMeta && modelMeta.bettable) || {};
+  return {
+    minProb:Number.isFinite(+b.min_prob) ? +b.min_prob : .62,
+    minMargin:Number.isFinite(+b.min_margin) ? +b.min_margin : .10
+  };
+}
+
+function betAnalysis(m){
+  const pids = Object.keys(players), n = pids.length, leader = betLeaderPid();
+  const raw = {H:0,D:0,A:0}, marginSum={H:0,D:0,A:0}, marginN={H:0,D:0,A:0};
+  const relSum={H:0,D:0,A:0}, relWeight={H:0,D:0,A:0};
+  let submitted=0;
+  pids.forEach(pid=>{
+    const p=predOf(m.id,pid); if(!full(p)) return;
+    const o=betOutcome(p), mg=Math.abs(p.h-p.a), rw=pid===leader?2:1, hist=betHistory(pid);
+    submitted++; raw[o]++; marginSum[o]+=mg; marginN[o]++;
+    relSum[o]+=hist.rate*rw; relWeight[o]+=rw;
+  });
+  const leaderPick=leader?betOutcome(predOf(m.id,leader)):null;
+  const supportUnits={
+    H:raw.H+(leaderPick==="H"?1:0), D:raw.D+(leaderPick==="D"?1:0), A:raw.A+(leaderPick==="A"?1:0)
+  };
+  const best=["H","D","A"].sort((a,b)=>(supportUnits[b]-supportUnits[a])||(raw[b]-raw[a]))[0];
+  const rawSupport=raw[best], weightedSupport=supportUnits[best];
+  const allSubmitted=n>0&&submitted===n;
+  const crowdQualifies=n>=BET_MIN_PLAYERS&&allSubmitted&&weightedSupport>=n;
+  const unanimous=allSubmitted&&rawSupport===n;
+  const leaderRescue=crowdQualifies&&!unanimous&&leaderPick===best;
+  const avgMargin=marginN[best]?marginSum[best]/marginN[best]:0;
+  const reliability=relWeight[best]?relSum[best]/relWeight[best]:.5;
+  const marginSignal=best==="D"?.33:Math.min(1,avgMargin/3);
+
+  const model=betModelFor(m.id), gate=betModelThreshold();
+  /* The historically validated BASE model must qualify first. Live M3 context
+     can only veto/downgrade that qualification; it can never promote a match
+     that the base model did not already support. */
+  const modelAgree=!!model&&model.basePick===best;
+  const baseProb=model?model.base[best]:0;
+  const basePass=modelAgree&&baseProb>=gate.minProb&&model.baseMargin>=gate.minMargin;
+  const liveSafe=!model||!model.adjusted||(
+    model.pick===best&&model.p[best]>=gate.minProb&&model.margin>=gate.minMargin
+  );
+  const modelPass=basePass&&liveSafe;
+  const modelProb=model?Math.min(baseProb,model.p[best]):0;
+  const qualifies=crowdQualifies&&modelPass;
+  const rating=model ? Math.max(0,Math.min(1,.75*modelProb+.15*reliability+.10*marginSignal)) : 0;
+
+  return {m,best,leader,submitted,totalPlayers:n,rawSupport,weightedSupport,allSubmitted,
+    crowdQualifies,unanimous,leaderRescue,avgMargin,reliability,rating,model,modelAgree,
+    baseProb,basePass,liveSafe,modelPass,modelProb,qualifies,gate,
+    pick:submitted?betPickLabel(m,best):"Waiting for picks"};
+}
+
 function betableMW(){
-  for (let i = SCORING_START_MW; i <= TOTAL_MW; i++){
-    if (!MW[i-1].every(m => !!results[m.id])) return i;
-  }
+  for(let i=SCORING_START_MW;i<=TOTAL_MW;i++) if(!MW[i-1].every(m=>!!results[m.id])) return i;
   return TOTAL_MW;
 }
-
-const betPct = x => Math.round(Math.max(0, Math.min(1, x || 0)) * 100);
-
+const betPct=x=>Math.round(Math.max(0,Math.min(1,x||0))*100);
 function betConsensusText(a){
-  if (!a.totalPlayers) return "No players";
-  if (!a.allSubmitted) return a.submitted + "/" + a.totalPlayers + " predictions in";
-  if (a.unanimous) return a.totalPlayers + "/" + a.totalPlayers + " users agree";
-  if (a.leaderRescue)
-    return a.rawSupport + " users + #1 bonus = " + a.totalPlayers + "/" + a.totalPlayers;
-  return a.rawSupport + "/" + a.totalPlayers + " users agree";
+  if(!a.totalPlayers)return "No players";
+  if(!a.allSubmitted)return a.submitted+"/"+a.totalPlayers+" predictions in";
+  if(a.unanimous)return a.totalPlayers+"/"+a.totalPlayers+" users agree";
+  if(a.leaderRescue)return a.rawSupport+" users + #1 bonus = "+a.totalPlayers+"/"+a.totalPlayers;
+  return a.rawSupport+"/"+a.totalPlayers+" users agree";
+}
+function betModelText(a){
+  if(!a.model)return "historical model pending";
+  const p=a.model.p;
+  let txt=(a.model.model||"model")+" · H "+betPct(p.H)+"% · D "+betPct(p.D)+"% · A "+betPct(p.A)+"%";
+  if(a.model.adjusted){
+    txt+=" · base "+betPct(a.model.base[a.best])+"% → live "+betPct(a.model.p[a.best])+"% (veto-only)";
+  }
+  return txt;
+}
+function betLegHtml(a,i){
+  return '<div class="bt-leg"><span class="num">'+(i+1)+'</span><div class="main">'
+    +'<div class="game">'+esc(teamNm(a.m.h))+' v '+esc(teamNm(a.m.a))+'</div>'
+    +'<div class="pick">'+esc(a.pick)+'</div>'
+    +'<div style="font-size:10px;color:var(--txt3);margin-top:2px">'+esc(betConsensusText(a))
+    +' · model '+betPct(a.modelProb)+'%</div><div class="bt-model-probs">'+esc(betModelText(a))+'</div></div>'
+    +'<span class="bt-conf">'+betPct(a.rating)+'</span></div>';
+}
+function betIndividualCard(a,i){
+  return '<div class="bt-card hot"><div class="game">'+esc(teamNm(a.m.h))+' v '+esc(teamNm(a.m.a))+'</div>'
+    +'<div class="pick">'+esc(a.pick)+'</div><div class="meta"><span class="bt-pill">INDIVIDUAL #'+(i+1)+'</span>'
+    +'<span>'+esc(betConsensusText(a))+'</span></div><div class="bt-meter"><i style="width:'+betPct(a.rating)+'%"></i></div>'
+    +'<div class="meta"><span>model '+betPct(a.modelProb)+'%</span><span>crowd history '+betPct(a.reliability)+'%</span>'
+    +(a.avgMargin?'<span>predicted margin '+a.avgMargin.toFixed(1)+'</span>':'')+'</div>'
+    +'<div class="bt-model-probs">'+esc(betModelText(a))+'</div></div>';
 }
 
-function betLegHtml(a, i){
-  return '<div class="bt-leg">'
-    + '<span class="num">' + (i+1) + '</span>'
-    + '<div class="main"><div class="game">' + esc(teamNm(a.m.h)) + ' v ' + esc(teamNm(a.m.a)) + '</div>'
-    + '<div class="pick">' + esc(a.pick) + '</div>'
-    + '<div style="font-size:10px;color:var(--txt3);margin-top:2px">' + esc(betConsensusText(a))
-    + (a.avgMargin ? ' · avg predicted margin ' + a.avgMargin.toFixed(1) : '') + '</div></div>'
-    + '<span class="bt-conf">' + betPct(a.rating) + '</span></div>';
+function btOpt(value,label,current){return '<option value="'+value+'"'+(+current===+value?' selected':'')+'>'+label+'</option>';}
+function betContextPanel(week){
+  if(!isAdmin)return '';
+  const games=MW[week-1].filter(m=>!results[m.id]&&!locked(m));
+  if(!games.length)return '';
+  return '<div class="panel"><div class="panel-h"><h3>Live model context</h3><small>admin · immediate M3 adjustment</small></div>'
+    +'<div class="prose" style="padding-bottom:6px">Use only when something material changes. Count <b>importance</b>, not number of injuries. Tactical edge includes manager strategy and expected formation.</div>'
+    +'<div class="bt-context">'+games.map(m=>{
+      const c=modelContext[m.id]||{};
+      return '<div class="bt-ctx-row"><div class="bt-ctx-game">'+esc(teamNm(m.h))+' v '+esc(teamNm(m.a))+'</div>'
+        +'<div class="bt-ctx-controls"><label>'+esc(teamNm(m.h))+' absences<select id="ctxH_'+m.id+'">'
+        +btOpt(0,'None / already absorbed',c.homeAbsence)+btOpt(1,'Important',c.homeAbsence)+btOpt(2,'Major / critical',c.homeAbsence)+'</select></label>'
+        +'<label>'+esc(teamNm(m.a))+' absences<select id="ctxA_'+m.id+'">'
+        +btOpt(0,'None / already absorbed',c.awayAbsence)+btOpt(1,'Important',c.awayAbsence)+btOpt(2,'Major / critical',c.awayAbsence)+'</select></label>'
+        +'<label>Tactical / formation edge<select id="ctxT_'+m.id+'">'
+        +btOpt(-2,'Away strong edge',c.tacticalEdge)+btOpt(-1,'Away slight edge',c.tacticalEdge)+btOpt(0,'Even / unknown',c.tacticalEdge)
+        +btOpt(1,'Home slight edge',c.tacticalEdge)+btOpt(2,'Home strong edge',c.tacticalEdge)+'</select></label>'
+        +'<label>Lineup uncertainty<select id="ctxU_'+m.id+'">'+btOpt(0,'Normal',c.uncertainty)+btOpt(1,'High / unresolved',c.uncertainty)+'</select></label>'
+        +'<input id="ctxN_'+m.id+'" maxlength="120" placeholder="Short reason, e.g. starting CB + striker out" value="'+esc(c.note||'')+'"></div>'
+        +'<div class="bt-ctx-actions"><button class="abtn" onclick="saveBetContext(\''+m.id+'\')">Save context</button>'
+        +'<button class="abtn red" onclick="clearBetContext(\''+m.id+'\')">Clear</button></div></div>';
+    }).join('')+'</div></div>';
 }
-
-function betIndividualCard(a, i){
-  return '<div class="bt-card hot">'
-    + '<div class="game">' + esc(teamNm(a.m.h)) + ' v ' + esc(teamNm(a.m.a)) + '</div>'
-    + '<div class="pick">' + esc(a.pick) + '</div>'
-    + '<div class="meta"><span class="bt-pill">INDIVIDUAL #' + (i+1) + '</span><span>'
-    + esc(betConsensusText(a)) + '</span></div>'
-    + '<div class="bt-meter"><i style="width:' + betPct(a.rating) + '%"></i></div>'
-    + '<div class="meta"><span>Betable rating ' + betPct(a.rating) + '/100</span>'
-    + '<span>supporter history ' + betPct(a.reliability) + '%</span>'
-    + (a.avgMargin ? '<span>margin ' + a.avgMargin.toFixed(1) + '</span>' : '') + '</div></div>';
+function saveBetContext(mid){
+  if(!isAdmin)return;
+  const get=id=>document.getElementById(id);
+  const val=id=>+(get(id)?.value||0);
+  const note=(get('ctxN_'+mid)?.value||'').trim().slice(0,120);
+  ref('modelContext/'+mid).set({homeAbsence:val('ctxH_'+mid),awayAbsence:val('ctxA_'+mid),
+    tacticalEdge:val('ctxT_'+mid),uncertainty:val('ctxU_'+mid),note,at:Date.now()})
+    .then(()=>toast('Live model context updated','good')).catch(()=>toast("Couldn't save model context",'bad'));
+}
+function clearBetContext(mid){
+  if(!isAdmin)return;
+  ref('modelContext/'+mid).remove().then(()=>toast('Model context cleared'));
 }
 
 function viewBetable(){
-  const week = betableMW();
-  const upcoming = MW[week-1].filter(m => !locked(m) && !results[m.id]);
-  const analyses = upcoming.map(betAnalysis).sort((a,b) =>
-    (Number(b.qualifies) - Number(a.qualifies)) ||
-    (b.rating - a.rating) || (b.agreement - a.agreement) || (b.avgMargin - a.avgMargin)
-  );
+  const week=betableMW(), upcoming=MW[week-1].filter(m=>!locked(m)&&!results[m.id]);
+  const analyses=upcoming.map(betAnalysis).sort((a,b)=>(Number(b.qualifies)-Number(a.qualifies))||(b.rating-a.rating)||(b.modelProb-a.modelProb));
+  const qualified=analyses.filter(a=>a.qualifies);
+  const comboPool=qualified.filter(a=>a.best!=="D");
+  const combo=comboPool.length>=BET_COMBO_MIN?comboPool.slice(0,BET_COMBO_MAX):[];
+  const individuals=qualified.slice(0,2);
+  const leader=betLeaderPid(), nPlayers=Object.keys(players).length;
+  const leaderName=leader&&players[leader]?players[leader].name:null;
+  const gate=betModelThreshold();
+  const modelName=(modelMeta&&modelMeta.selectedModel)||null;
+  const modelReady=!!modelName&&analyses.some(a=>a.model);
+  const evals=(modelMeta&&modelMeta.evaluation)||{};
+  const fmtLL=x=>x&&Number.isFinite(+x.log_loss)?(+x.log_loss).toFixed(3):'—';
 
-  const leader = betLeaderPid();
-  const leaderName = leader && players[leader] ? players[leader].name : null;
-  const qualified = analyses.filter(a => a.qualifies);
-  const comboPool = qualified.filter(a => a.best !== "D");
-  const combo = comboPool.length >= BET_COMBO_MIN ? comboPool.slice(0, BET_COMBO_MAX) : [];
-  const individuals = qualified.slice(0, 2);
-  const nPlayers = Object.keys(players).length;
+  let comboHtml=combo.length
+    ? '<div class="bt-good"><b>ONE COMBO · '+combo.length+' legs</b><div class="bt-sub">Every leg passed both gates: effective crowd unanimity and independent calibrated-model agreement.</div></div><div class="bt-combo">'+combo.map(betLegHtml).join('')+'</div>'
+    : '<div class="bt-risk"><b>No combo recommendation this week.</b><div class="bt-sub">Betable needs at least three upcoming win picks that pass both the crowd and football-model gates. It will not add a weak leg just to create a combo.</div></div>';
+  let individualHtml=individuals.length===2?'<div class="bt-grid">'+individuals.map(betIndividualCard).join('')+'</div>'
+    : individuals.length===1?'<div class="bt-grid">'+betIndividualCard(individuals[0],0)+'</div><div class="bt-empty">Only one match passes both gates. No second pick is being forced.</div>'
+    : '<div class="bt-empty">No individual recommendation yet. Crowd consensus and the historical model must independently agree.</div>';
 
-  let comboHtml;
-  if (combo.length){
-    comboHtml = '<div class="bt-good"><b>ONE COMBO · ' + combo.length + ' legs</b>'
-      + '<div class="bt-sub">Every leg passed the strict consensus gate. Betable uses the rating only to choose the strongest 3–5 qualifiers.</div></div>'
-      + '<div class="bt-combo">' + combo.map(betLegHtml).join('') + '</div>';
-  } else {
-    comboHtml = '<div class="bt-risk"><b>No combo recommendation this week.</b>'
-      + '<div class="bt-sub">A combo needs at least three upcoming win picks that pass the strict consensus gate. Betable will not fill the ticket with weaker games just to reach three legs.</div></div>';
-  }
+  const leaderNote=leaderName?'Scoreboard #1 <b>'+esc(leaderName)+'</b> counts twice in the crowd gate. With '+nPlayers+' players, '+Math.max(0,nPlayers-1)+' agreeing can reach '+nPlayers+'/'+nPlayers+' only when #1 is among them.'
+    :'No official scored #1 yet, so the crowd gate requires true unanimity.';
+  const modelNote=modelReady
+    ? '<b>'+esc(modelName)+'</b> · model gate ≥ '+betPct(gate.minProb)+'% with ≥ '+betPct(gate.minMargin)+'-point separation. '
+      +'Log loss: validation '+fmtLL(evals.validation)+' · 2024/25 '+fmtLL(evals.test_2425)+' · 2025/26 '+fmtLL(evals.test_2526)+'.'
+    : '<b>Historical model waiting for its first training/publish run.</b> Betable will not issue recommendations until model probabilities are available.';
+  const supportWarn=modelMeta&&modelMeta.bettable&&modelMeta.bettable.gate_supported_65pct===false
+    ? '<div class="bt-note">Validation did not support a threshold with a demonstrated 65% hit rate at adequate sample size, so the engine is using its conservative fallback probability gate. This is shown rather than hidden.</div>':'';
 
-  let individualHtml;
-  if (individuals.length === 2){
-    individualHtml = '<div class="bt-grid">' + individuals.map(betIndividualCard).join('') + '</div>';
-  } else if (individuals.length === 1){
-    individualHtml = '<div class="bt-grid">' + betIndividualCard(individuals[0], 0) + '</div>'
-      + '<div class="bt-empty">Only one match currently passes the consensus gate. Betable will not invent a second individual pick.</div>';
-  } else {
-    individualHtml = '<div class="bt-empty">No individual recommendation yet. A match appears here only after every registered player has predicted it and the weighted crowd reaches full consensus.</div>';
-  }
-
-  const leaderNote = leaderName
-    ? 'Scoreboard #1 <b>' + esc(leaderName) + '</b> counts twice. That means, with ' + nPlayers
-      + ' players, ' + Math.max(0,nPlayers-1) + ' agreeing users can still reach ' + nPlayers + '/' + nPlayers
-      + ' only when the #1 player is among them.'
-    : 'No official scored #1 yet, so there is no leader bonus; true unanimity is required.';
-
-  return '<div class="panel"><div class="bt-hero"><h2>BETABLE · MATCHWEEK ' + week + '</h2>'
-    + '<p><b>One combo. Two individuals. No forced picks.</b> Betable first asks whether the crowd is strong enough to recommend anything at all; only then does it rank the qualified games.</p>'
-    + '<div class="bt-note">' + leaderNote + ' The displayed rating is a ranking signal, <b>not bookmaker odds or a true win probability</b>.</div></div>'
-    + '<div class="panel-h"><h3>This week\'s combo</h3><small>one ticket · 3–5 matches</small></div>' + comboHtml + '</div>'
-    + '<div class="panel"><div class="panel-h"><h3>Individual bets</h3><small>two strongest qualified picks</small></div>' + individualHtml + '</div>'
-    + '<div class="panel"><div class="prose"><b>How a match qualifies.</b><ul>'
-    + '<li>Every registered player must submit a complete prediction for that match.</li>'
-    + '<li>Each player votes home win, draw, or away win. The current Scoreboard #1 contributes one extra vote to the outcome they chose.</li>'
-    + '<li>With 14 players, 14 agreeing qualifies. So does 13 agreeing <b>only if the #1 is one of those 13</b>: 13 + leader bonus = 14/14. If the #1 is the dissenter, 13/14 fails.</li>'
-    + '<li>After qualification, true agreement, predicted goal margin, and each supporter\'s historical outcome accuracy rank the choices. Historical accuracy is smoothed early in the season and becomes more informative as results accumulate.</li>'
-    + '</ul></div></div>';
+  return '<div class="panel"><div class="bt-hero"><h2>BETABLE · MATCHWEEK '+week+'</h2>'
+    +'<p><b>One combo. Two individuals. Two independent signals.</b> A bet is recommended only when the weighted crowd and the calibrated football model choose the same outcome.</p>'
+    +'<div class="bt-note">'+leaderNote+'</div></div>'
+    +'<div class="bt-model"><b>FOOTBALL MODEL</b><div class="line">'+modelNote+'</div><div class="line">Important injuries and manager/tactical/formation changes are a conservative veto-only M3 layer: they can downgrade or remove a recommendation, but cannot create one.</div>'+supportWarn+'</div>'
+    +'<div class="panel-h"><h3>This week\'s combo</h3><small>one ticket · 3–5 matches</small></div>'+comboHtml+'</div>'
+    +'<div class="panel"><div class="panel-h"><h3>Individual bets</h3><small>two strongest dual-signal picks</small></div>'+individualHtml+'</div>'
+    +'<div class="panel"><div class="prose"><b>Qualification.</b><ul>'
+    +'<li><b>Crowd:</b> every registered player predicts the match. #1 contributes one extra vote. The effective vote must reach full consensus.</li>'
+    +'<li><b>Model:</b> the independently trained historical model must choose the same H/D/A outcome and clear its validation-derived probability and separation gates.</li>'
+    +'<li><b>Ranking:</b> once both gates pass, calibrated model probability carries most weight; crowd prediction history and predicted goal margin break close calls.</li>'
+    +'<li><b>Live news:</b> important absences and tactical/formation changes may only downgrade/veto a base-model pick until M3 is historically validated. Existing long-term absences should normally be left at zero because recent form already contains much of their effect.</li>'
+    +'</ul></div></div>'+betContextPanel(week);
 }
 
 /* ══ FANZONE / FAN BATTLES ═══════════════════════════════════════════════
@@ -2381,14 +2447,14 @@ function viewRules(){
     + "free week at the top.</li>"
     + "<li>Badges are for glory only — they don't add to your points.</li>"
     + "</ul></div></div>"
-
-    + '<div class="panel"><div class="panel-h"><h3>Betable</h3><small>strict crowd consensus</small></div>'
+    + '<div class="panel"><div class="panel-h"><h3>Betable</h3><small>crowd + calibrated model</small></div>'
     + '<div class="prose"><ul>'
-    + "<li><b>Every registered player must predict the match</b> before it can become a Betable recommendation.</li>"
-    + "<li><b>The current #1 on the Scoreboard counts twice.</b> With 14 players, 13 agreeing can qualify only when #1 is one of those 13: 13 + the leader bonus = 14/14. If #1 is the dissenter, 13/14 does not qualify.</li>"
-    + "<li><b>Betable produces one 3–5 leg combo and two individual picks</b> from the strongest matches that pass the consensus gate. It never adds a weak game simply to fill the ticket.</li>"
-    + "<li><b>The ranking improves through the season.</b> True agreement, predicted winning margin, and the supporters' historically smoothed win/draw/loss accuracy rank the qualified matches.</li>"
-    + "<li>The Betable rating is a group-ranking signal, not bookmaker odds, a calibrated probability, or a guarantee.</li>"
+    + "<li><b>Two independent signals must agree.</b> The weighted crowd chooses H/D/A and the historical football model separately produces calibrated Home/Draw/Away probabilities.</li>"
+    + "<li><b>Every registered player must predict the match.</b> Scoreboard #1 counts twice. With 14 players, 13 agreeing qualifies the crowd gate only when #1 is one of those 13.</li>"
+    + "<li><b>The model is selected chronologically:</b> older seasons train it, 2023/24 validates it, and 2024/25 plus 2025/26 are later tests. Log loss and calibration matter more than raw accuracy.</li>"
+    + "<li><b>One 3–5 leg combo and two individuals</b> are shown only from matches that pass both gates. No weak match is added just to fill a ticket.</li>"
+    + "<li><b>Important injuries and manager/tactical/formation changes</b> are a bounded veto-only live adjustment. Until enough dated context is archived and backtested, M3 may remove confidence but cannot create a Betable qualification.</li>"
+    + "<li>Model percentages are estimates, not guarantees, and Betable does not claim profit without comparing against market odds.</li>"
     + "</ul></div></div>"
 
     + '<div class="panel"><div class="panel-h"><h3>Fanzone</h3><small>this week only</small></div>'
