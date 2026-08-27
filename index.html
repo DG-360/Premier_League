@@ -626,7 +626,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   box-shadow:var(--focus);
 }
 button{touch-action:manipulation}
-.wrap{max-width:980px;margin:0 auto;padding:0 15px calc(84px + var(--safe-b))}
+.wrap{width:100%;max-width:1220px;margin:0 auto;padding:0 18px calc(84px + var(--safe-b))}
 .mono{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace}
 .disp{font-family:'Bebas Neue',Impact,sans-serif}
 
@@ -1000,36 +1000,65 @@ tbody tr:hover{background:rgba(255,255,255,.018)}
 
 
 
-/* ══ MOBILE NAV FIX ══
-   Keep all six primary tabs fully inside narrow phone screens.
-   Desktop/tablet behavior above 560px remains unchanged. */
-@media (max-width:560px){
-  .nav{
-    display:grid;
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:5px;
-    width:100%;
-    overflow:visible;
-  }
+/* ══ RESPONSIVE WIDTH + NAV FIX ══
+   - Uses more laptop/desktop width without becoming excessively wide.
+   - All six primary tabs always stay inside the navigation container.
+   - Phone view keeps the same single-row tab bar instead of pushing
+     Fanzone/Rules outside the right edge. */
+
+/* The later .wrap declaration above is the active desktop container.
+   Keep comfortable margins on large displays. */
+@media (min-width:1500px){
+  .wrap{max-width:1280px}
+}
+
+/* Navigation: six equal tracks, no fixed/minimum button width. */
+.nav{
+  display:grid !important;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  width:100%;
+  min-width:0;
+  overflow:hidden;
+}
+.nav button{
+  min-width:0 !important;
+  width:100%;
+  max-width:100%;
+  padding-left:4px;
+  padding-right:4px;
+  overflow:hidden;
+  text-overflow:clip;
+  white-space:nowrap;
+}
+
+@media (max-width:700px){
+  .wrap{padding-left:10px;padding-right:10px}
+  .nav{gap:3px;padding:3px}
   .nav button{
     min-width:0 !important;
-    width:100%;
-    padding:10px 3px;
-    font-size:10px;
-    line-height:1.15;
-    letter-spacing:.01em;
-    text-align:center;
-    overflow:hidden;
-    text-overflow:ellipsis;
+    padding:10px 1px;
+    font-size:clamp(7.9px,2.25vw,9.75px);
+    letter-spacing:0;
+    line-height:1.05;
   }
 }
 
-@media (max-width:350px){
-  .nav{gap:4px;padding:3px}
+@media (max-width:410px){
+  .wrap{padding-left:7px;padding-right:7px}
+  .nav{gap:2px;padding:3px}
   .nav button{
-    padding:9px 2px;
-    font-size:9.25px;
-    letter-spacing:0;
+    min-width:0 !important;
+    padding:9px 0;
+    font-size:clamp(7.2px,2.18vw,8.7px);
+    letter-spacing:-.015em;
+  }
+}
+
+@media (max-width:340px){
+  .nav{gap:1px;padding:2px}
+  .nav button{
+    font-size:7px;
+    padding:9px 0;
   }
 }
 
