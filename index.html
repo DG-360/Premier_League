@@ -998,6 +998,41 @@ tbody tr:hover{background:rgba(255,255,255,.018)}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
 
+
+
+/* ══ MOBILE NAV FIX ══
+   Keep all six primary tabs fully inside narrow phone screens.
+   Desktop/tablet behavior above 560px remains unchanged. */
+@media (max-width:560px){
+  .nav{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:5px;
+    width:100%;
+    overflow:visible;
+  }
+  .nav button{
+    min-width:0 !important;
+    width:100%;
+    padding:10px 3px;
+    font-size:10px;
+    line-height:1.15;
+    letter-spacing:.01em;
+    text-align:center;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+}
+
+@media (max-width:350px){
+  .nav{gap:4px;padding:3px}
+  .nav button{
+    padding:9px 2px;
+    font-size:9.25px;
+    letter-spacing:0;
+  }
+}
+
 </style>
 </head>
 <body>
