@@ -3134,18 +3134,34 @@ function resetPw(pid){
 }
 
 function removePlayer(pid){
-  if (!isAdmin || !players[pid] || pid === me) return;
+  // Admin-only account deletion.
+  if (!isAdmin) return toast("Admin access required", "bad");
+  if (!players[pid] || pid === me) return;
+
   const nm = players[pid].name;
-  if (!confirm("Remove " + nm + " from the league?\n\nTheir points and predictions go with them. "
-             + "This can't be undone.")) return;
-  ref("players/" + pid).remove()
-    .then(() => {
-      ref("titles/" + pid).remove();
-      ref("boots/" + pid).remove();
-      ref("fans/" + pid).remove();
-    })
-    .then(() => toast(nm + " removed"))
-    .catch(() => toast("Couldn't remove — check your connection", "bad"));
+
+  if (!confirm(
+    "Remove " + nm + " from the league?\n\n" +
+    "Their account, predictions, points and league data will be permanently deleted.\n\n" +
+    "This can't be undone."
+  )) return;
+
+  const updates = {};
+
+  // Account/profile data.
+  updates["players/" + pid] = null;
+  updates["titles/" + pid] = null;
+  updates["boots/" + pid] = null;
+  updates["fans/" + pid] = null;
+
+  // Delete every saved match prediction made by this player.
+  ALL.forEach(m => {
+    updates["preds/" + m.id + "/" + pid] = null;
+  });
+
+  db.ref(ROOT).update(updates)
+    .then(() => toast(nm + " completely removed", "good"))
+    .catch(() => toast("Couldn't remove user — check your connection", "bad"));
 }
 
 function clearMW1Predictions(){
