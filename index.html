@@ -658,6 +658,12 @@ button{touch-action:manipulation}
 .fld input:focus,.fld select:focus{border-color:rgba(0,255,135,.7);box-shadow:var(--focus)}
 .who-b{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.025)}
 .who-b:hover{background:rgba(255,255,255,.055);border-color:var(--line2)}
+.who-last-label,.who-other-label{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--txt3);font-weight:700;padding:2px 2px 0}
+.who-last{border-color:rgba(0,255,135,.22);background:rgba(0,255,135,.045)}
+.who-last:hover{border-color:rgba(0,255,135,.48);background:rgba(0,255,135,.075)}
+.who-change{width:100%;padding:8px 10px;border-radius:9px;color:var(--txt2);font-size:11.5px;font-weight:700;border:1px dashed var(--line2);transition:.15s}
+.who-change:hover{color:var(--txt);border-color:var(--line3);background:rgba(255,255,255,.035)}
+.who-other-label{margin-top:3px}
 .hint,.color-note{color:var(--txt3);line-height:1.5}
 
 /* Buttons */
@@ -1092,7 +1098,7 @@ tbody tr:hover{background:rgba(255,255,255,.018)}
       </div>
       <button class="btn" onclick="doSignIn()">Sign in</button>
       <div class="err" id="errIn" hidden><span>⚠</span><span id="errInTxt"></span></div>
-      <p class="hint">Tap your name above, then enter the password you chose.</p>
+      <p class="hint" id="authHint">Tap your name above, then enter the password you chose.</p>
     </div>
 
     <!-- sign up -->
@@ -2038,6 +2044,20 @@ function fmtFanTime(ms){
 /* ══ AUTH ════════════════════════════════════════════════════════════════ */
 let authMode = "in", pickedPid = null;
 let signupColor = null, profileColorDraft = null;
+let showOtherPlayers = false;
+const LAST_PLAYER_KEY = "pl2627_last_player";
+
+function lastPlayerOnDevice(){
+  try { return localStorage.getItem(LAST_PLAYER_KEY); } catch(e) { return null; }
+}
+function rememberPlayerOnDevice(pid){
+  try { localStorage.setItem(LAST_PLAYER_KEY, pid); } catch(e){}
+}
+function forgetMissingLastPlayer(pid){
+  try {
+    if (localStorage.getItem(LAST_PLAYER_KEY) === pid) localStorage.removeItem(LAST_PLAYER_KEY);
+  } catch(e){}
+}
 
 function colorButtons(selected, exceptPid, handlerName){
   return PAL.map((c, i) => {
@@ -2092,7 +2112,7 @@ function saveMyColor(){
 }
 
 function setAuthMode(m){
-  authMode = m; pickedPid = null;
+  authMode = m; pickedPid = null; showOtherPlayers = false;
   document.getElementById("segIn").classList.toggle("on", m === "in");
   document.getElementById("segUp").classList.toggle("on", m === "up");
   document.getElementById("paneIn").hidden = m !== "in";
@@ -2103,25 +2123,66 @@ function setAuthMode(m){
   if (m === "up") renderSignupColors();
 }
 
+function playerLoginButton(pid, label, extraClass){
+  const p = players[pid], t = tallies(), c = colr(p.ci || 0), on = pickedPid === pid;
+  return '<button class="who-b' + (extraClass ? ' ' + extraClass : '') + '" style="'
+    + (on ? "border-color:" + c + ";background:rgba(255,255,255,.06)" : "")
+    + '" onclick="pickPlayer(\'' + pid + '\')">'
+    + '<span class="av" style="--c:' + c + '">' + esc(initials(p.name)) + '</span>'
+    + '<span style="flex:1;font-weight:' + (on ? 700 : 500) + '">'
+    + (label ? esc(label) + ' <b>' + esc(p.name) + '</b>' : esc(p.name)) + '</span>'
+    + '<span class="mono" style="font-size:11px;color:var(--txt3)">' + (t[pid] ? t[pid].pts : 0) + ' pts</span>'
+    + '</button>';
+}
+
 function renderWhoList(){
   const box = document.getElementById("whoList");
   if (!box) return;
-  const pids = sortedPids(), t = tallies();
+  const pids = sortedPids();
+  const hint = document.getElementById("authHint");
   document.getElementById("fldInName").hidden = pids.length > 0;
+
   if (!pids.length){
     box.innerHTML = '<div style="font-size:12.5px;color:var(--txt3);padding:10px 2px">'
       + 'No players yet — create the first account to start the league.</div>';
+    if (hint) hint.textContent = "Create an account to start playing.";
     return;
   }
-  box.innerHTML = pids.map(pid => {
-    const p = players[pid], c = colr(p.ci || 0), on = pickedPid === pid;
-    return '<button class="who-b" style="' + (on ? "border-color:" + c + ";background:rgba(255,255,255,.06)" : "")
-      + '" onclick="pickPlayer(\'' + pid + '\')">'
-      + '<span class="av" style="--c:' + c + '">' + esc(initials(p.name)) + '</span>'
-      + '<span style="flex:1;font-weight:' + (on ? 700 : 500) + '">' + esc(p.name) + '</span>'
-      + '<span class="mono" style="font-size:11px;color:var(--txt3)">' + (t[pid] ? t[pid].pts : 0) + ' pts</span>'
-      + '</button>';
-  }).join("");
+
+  let lastPid = lastPlayerOnDevice();
+  if (lastPid && !players[lastPid]){
+    forgetMissingLastPlayer(lastPid);
+    lastPid = null;
+  }
+
+  if (lastPid && !pickedPid) pickedPid = lastPid;
+
+  if (!lastPid){
+    box.innerHTML = pids.map(pid => playerLoginButton(pid, "", "")).join("");
+    if (hint) hint.textContent = "Tap your name above, then enter your password.";
+    return;
+  }
+
+  const others = pids.filter(pid => pid !== lastPid);
+  let html = '<div class="who-last-label">Last used on this device</div>'
+    + playerLoginButton(lastPid, "Continue as", "who-last");
+
+  if (others.length){
+    html += '<button type="button" class="who-change" onclick="showPlayerChooser()">'
+      + (showOtherPlayers ? "Hide other players" : "Choose another player") + '</button>';
+    if (showOtherPlayers){
+      html += '<div class="who-other-label">Choose another player</div>'
+        + others.map(pid => playerLoginButton(pid, "", "")).join("");
+    }
+  }
+
+  box.innerHTML = html;
+  if (hint) hint.textContent = "Your password is still required to sign in.";
+}
+
+function showPlayerChooser(){
+  showOtherPlayers = !showOtherPlayers;
+  renderWhoList();
 }
 
 function pickPlayer(pid){
@@ -2171,7 +2232,7 @@ function doSignUp(){
 function enter(pid){
   me = pid; ready = true;
   signupColor = null;
-  try { sessionStorage.setItem("pl2627_me", pid); } catch(e){}
+  rememberPlayerOnDevice(pid);
   document.getElementById("ovAuth").hidden = true;
   document.getElementById("app").style.display = "block";
   document.getElementById("inPw").value = "";
@@ -2182,7 +2243,6 @@ function enter(pid){
 
 function signOut(){
   me = null; isAdmin = false;
-  try { sessionStorage.removeItem("pl2627_me"); } catch(e){}
   document.getElementById("app").style.display = "none";
   document.getElementById("ovAuth").hidden = false;
   document.getElementById("btnAdmin").classList.remove("act");
@@ -3416,14 +3476,9 @@ let booted = false;
 ref("players").once("value", () => {
   if (booted) return;
   booted = true;
+  curMW = liveMW();
   renderWhoList();
-  let saved = null;
-  try { saved = sessionStorage.getItem("pl2627_me"); } catch(e){}
-  if (saved && players[saved]) enter(saved);
-  else {
-    curMW = liveMW();
-    if (!Object.keys(players).length) setAuthMode("up");
-  }
+  if (!Object.keys(players).length) setAuthMode("up");
 });
 
 /* keyboard: arrow keys page through matchweeks */
