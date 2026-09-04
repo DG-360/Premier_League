@@ -1214,7 +1214,7 @@ tbody tr:hover{background:rgba(255,255,255,.018)}
               database and takes over from the one below.
    ══════════════════════════════════════════════════════════════════════════ */
 const DB_URL     = "https://world-cup-2026-predictio-7c7b2-default-rtdb.firebaseio.com";
-const ADMIN_HASH = "78000c425f93b57138a4afd7bc7c9aa355267cb9d38521a76511b4722b7fcbea";
+const ADMIN_HASH = "9c4761fe6c5be15fb9f573b09d6d40e96f37f727d45df832bf2213e5759606f5";
 const ROOT      = "pl2627";
 
 /* ── CLUB CRESTS ───────────────────────────────────────────────────────────
@@ -1412,6 +1412,19 @@ function ensureMW1PredictionsCleared(){
 }
 ref("meta").on("value", s => {
   meta = s.val() || {};
+
+  /* One-time admin password reset (2026-09-04).
+     This updates Firebase so an older database-stored admin hash cannot
+     override the new fallback hash. The marker prevents future admin-key
+     changes from being overwritten on later page loads. */
+  if (!meta.adminPasswordReset20260904){
+    const adminReset = {};
+    adminReset["meta/adminHash"] = ADMIN_HASH;
+    adminReset["meta/adminPasswordReset20260904"] = true;
+    db.ref(ROOT).update(adminReset)
+      .catch(err => console.warn("[admin reset] Could not update admin password:", err && err.message || err));
+  }
+
   ensureMW1PredictionsCleared();
 });
 
