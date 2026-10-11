@@ -270,6 +270,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .adm input[type=number]{width:38px;height:29px;text-align:center;border-radius:7px;border:1px solid var(--line2);
   background:rgba(0,0,0,.35);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;outline:none}
 .adm input[type=number]:focus{border-color:var(--amber)}
+.adm .pred-player{height:29px;max-width:180px;min-width:0;border-radius:7px;border:1px solid var(--line2);background:var(--bg);color:var(--txt2);padding:0 7px;font-size:11px}
 .adm input[type=datetime-local]{height:29px;border-radius:7px;border:1px solid var(--line2);background:rgba(0,0,0,.35);
   padding:0 7px;font-size:11px;outline:none;color:var(--txt2);min-width:0;flex:1}
 .abtn{height:29px;padding:0 10px;border-radius:7px;border:1px solid rgba(255,176,32,.42);color:var(--amber);
@@ -2613,7 +2614,70 @@ function matchCard(m){
     + '<div class="mc-top"><span class="t">' + fmtTime(koOf(m)) + "</span><span class=\"sp\"></span>"
     + '<span id="st_' + m.id + '">' + statusTag(m) + "</span></div>"
     + '<div class="mc-body">' + sideH + mid + sideA + "</div>"
-    + foot + adm + "</article>";
+    + foot + adm + (isAdmin && scoring ? adminPredictionRow(m) : "") + "</article>";
+}
+
+/* Admin-entered picks use the same prediction path and scoring as player picks. */
+const adminPredDrafts = {};
+function adminPredictionRow(m){
+  const d = adminPredDrafts[m.id] || {pid:"", h:"", a:""};
+  const options = rankedPids().map(pid => '<option value="' + esc(pid) + '"'
+    + (pid === d.pid ? " selected" : "") + '>' + esc(players[pid].name) + '</option>').join("");
+  return '<div class="adm">'
+    + '<span class="lb">Player prediction</span>'
+    + '<select class="pred-player" id="ap_' + m.id + '_pid" aria-label="Player" onchange="selectAdminPrediction(\'' + m.id + '\',this.value)">'
+    + '<option value="">Select player</option>' + options + '</select>'
+    + '<input type="number" min="0" max="99" step="1" id="ap_' + m.id + '_h" value="' + d.h + '" placeholder="–" aria-label="Predicted home goals"'
+    + ' oninput="draftAdminPrediction(\'' + m.id + '\',\'h\',this.value)">'
+    + '<span style="color:var(--txt3)">–</span>'
+    + '<input type="number" min="0" max="99" step="1" id="ap_' + m.id + '_a" value="' + d.a + '" placeholder="–" aria-label="Predicted away goals"'
+    + ' oninput="draftAdminPrediction(\'' + m.id + '\',\'a\',this.value)">'
+    + '<button class="abtn" onclick="saveAdminPrediction(\'' + m.id + '\')">Save pick</button>'
+    + (locked(m) ? '<span class="foot-note">Admin deadline override</span>' : "")
+    + '</div>';
+}
+function selectAdminPrediction(mid, pid){
+  if (!isAdmin) return;
+  const p = players[pid] ? predOf(mid, pid) : null;
+  const d = adminPredDrafts[mid] = {pid:players[pid] ? pid : "",
+    h:p && Number.isInteger(p.h) ? p.h : "", a:p && Number.isInteger(p.a) ? p.a : ""};
+  for (const side of ["h", "a"]){
+    const el = document.getElementById("ap_" + mid + "_" + side);
+    if (el) el.value = d[side];
+  }
+}
+function draftAdminPrediction(mid, side, value){
+  if (!isAdmin || !["h", "a"].includes(side)) return;
+  if (!adminPredDrafts[mid]) adminPredDrafts[mid] = {pid:"", h:"", a:""};
+  // Retain only valid numeric text so drafts remain safe to render.
+  adminPredDrafts[mid][side] = /^\d{1,2}$/.test(value) ? value : "";
+}
+function saveAdminPrediction(mid){
+  if (!isAdmin || !me || !players[me]) return;
+  const m = BY_ID[mid];
+  if (!m || m.mw < SCORING_START_MW) return;
+  const select = document.getElementById("ap_" + mid + "_pid");
+  const home = document.getElementById("ap_" + mid + "_h");
+  const away = document.getElementById("ap_" + mid + "_a");
+  if (!select || !home || !away) return;
+  const pid = select.value;
+  if (!players[pid]) return toast("Select a player", "bad");
+  if (![home.value, away.value].every(v => /^\d{1,2}$/.test(v)))
+    return toast("Enter both scores as whole numbers from 0 to 99", "bad");
+  const next = {h:Number(home.value), a:Number(away.value)};
+  const previous = predOf(mid, pid);
+  const auditKey = ref("predictionAudit").push().key;
+  const updates = {};
+  updates["preds/" + mid + "/" + pid] = next;
+  updates["predictionAudit/" + auditKey] = {
+    matchId:mid, playerId:pid, submittedByAdminId:me,
+    previous:previous || null, prediction:next,
+    timestamp:firebase.database.ServerValue.TIMESTAMP, deadlineOverride:locked(m)
+  };
+  // Save the complete pick and its audit record together; points update via the existing listener.
+  return db.ref(ROOT).update(updates)
+    .then(() => toast("Prediction saved for " + players[pid].name, "good"))
+    .catch(() => toast("Couldn't save — check your connection", "bad"));
 }
 
 /* ══ LEAGUE TABLE ════════════════════════════════════════════════════════ */
